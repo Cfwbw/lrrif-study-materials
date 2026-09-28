@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model-output JSON schema and safety/decision-caution label definitions",
+  "description": "The six-field JSON output contract stated in the experimental prompts. This schema documents the historical requirements; it is not a claim that all requirements were implemented by the runtime validator or satisfied by all saved outputs.",
+  "type": "object",
+  "required": [
+    "current_state_interpretation",
+    "risk_identification",
+    "training_adjustment_suggestion",
+    "supporting_evidence",
+    "safety_flag",
+    "caveats"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "current_state_interpretation": {
+      "type": "string",
+      "description": "Concise interpretation of current state, at most two sentences."
+    },
+    "risk_identification": {
+      "type": "string",
+      "description": "Risk or concern; when no clear risk: 'No clear acute risk identified from available inputs.' Not the string 'null'."
+    },
+    "training_adjustment_suggestion": {
+      "type": "string",
+      "description": "Concrete Day t+1 training/activity adjustment, at most three sentences."
+    },
+    "supporting_evidence": {
+      "type": "array",
+      "description": "Two to five evidence objects; exact input-variable names.",
+      "minItems": 2,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": [
+          "claim",
+          "variable",
+          "direction"
+        ],
+        "properties": {
+          "claim": {
+            "type": "string",
+            "description": "Claim supported by the selected variable."
+          },
+          "variable": {
+            "type": "string",
+            "description": "Exact visible input variable name."
+          },
+          "direction": {
+            "enum": [
+              "↑",
+              "↓",
+              "→",
+              null
+            ],
+            "description": "One of ↑, ↓, →, or JSON null."
+          }
+        }
+      }
+    },
+    "safety_flag": {
+      "type": "string",
+      "description": "Model-produced safety flag: none, caution, or stop.",
+      "enum": [
+        "none",
+        "caution",
+        "stop"
+      ],
+      "x-label-definitions": {
+        "none": "No clear concern from available inputs.",
+        "caution": "Poor sleep, elevated fatigue/stress/soreness, reduced readiness, unusually high load, or adverse recent trend suggests modification.",
+        "stop": "Severe or multiple concerning signals suggest avoiding hard training and seeking human coach/medical review; requires strong directly grounded evidence."
+      }
+    },
+    "caveats": {
+      "type": "string",
+      "description": "Missing or intentionally withheld information when relevant."
+    }
+  },
+  "$comment": "Machine-readable documentation assembled from the historical prompt text and validation/analysis code on 2026-09-28. It is not a pre-existing schema artifact or a preregistration record. The derived decision-caution label is documented under $defs and x-derived-label and is not a seventh model-generated field. Sentence limits, exact input-variable visibility and semantic appropriateness require separate checks.",
+  "$defs": {
+    "decision_caution_label": {
+      "type": "string",
+      "enum": [
+        "stop_or_medical_caution",
+        "reduce_or_recovery",
+        "increase_or_progress",
+        "maintain",
+        "unclear"
+      ],
+      "description": "Derived analysis label named decision_bucket in the analysis code; obtained by lexical rules applied after generation, not emitted as an additional field by the model."
+    },
+    "historical_runtime_acceptance": {
+      "type": "object",
+      "required": [
+        "current_state_interpretation",
+        "risk_identification",
+        "training_adjustment_suggestion",
+        "supporting_evidence",
+        "safety_flag",
+        "caveats"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "current_state_interpretation": {},
+        "risk_identification": {},
+        "training_adjustment_suggestion": {},
+        "supporting_evidence": {
+          "type": "array"
+        },
+        "safety_flag": {
+          "enum": [
+            "none",
+            "caution",
+            "stop"
+          ]
+        },
+        "caveats": {}
+      }
+    }
+  },
+  "x-derived-label": {
+    "field_name": "decision_bucket",
+    "schema_reference": "#/$defs/decision_caution_label",
+    "generated_by_model": false,
+    "historical_source": "scripts/23_analyze_wave3_grounding_failure_cases.py:96-112",
+    "input": "The space-separated concatenation of risk_identification, training_adjustment_suggestion, and complete raw_text, converted to lowercase. If the parsed payload is absent, the first two strings are empty; raw_text is still scanned.",
+    "matching": "Python regular-expression search; first match wins in ascending priority order; unclear is the fallback. Word boundaries are applied as written. The rules do not generally resolve negation.",
+    "categories": [
+      {
+        "label": "stop_or_medical_caution",
+        "priority": 1,
+        "definition": "Stop-training or medical-caution wording matched by the first rule.",
+        "regex": "\\b(stop|no training|medical|clinician|do not train)\\b"
+      },
+      {
+        "label": "reduce_or_recovery",
+        "priority": 2,
+        "definition": "Reduced-load, rest, or recovery wording, when the preceding rule does not match.",
+        "regex": "\\b(rest|active recovery|reduce|lower|easy|light|deload)\\b"
+      },
+      {
+        "label": "increase_or_progress",
+        "priority": 3,
+        "definition": "Increased-load or progression wording, when neither preceding rule matches.",
+        "regex": "\\b(increase|progress|higher|harder)\\b"
+      },
+      {
+        "label": "maintain",
+        "priority": 4,
+        "definition": "Maintain-current-training wording, when no higher-priority rule matches.",
+        "regex": "\\b(maintain|same|normal|usual)\\b"
+      },
+      {
+        "label": "unclear",
+        "priority": 5,
+        "definition": "No match to the preceding four lexical categories.",
+        "regex": null
+      }
+    ],
+    "historical_version_note": "The earlier script 21 rule omits deload from reduce_or_recovery. Script 23 is the version used for the stored robustness/grounding label recheck. Audit lexica are preserved by source in ../07_audit_lexica/audit_lexica_by_source.json."
+  },
+  "x-historical-runtime-validation": {
+    "schema_reference": "#/$defs/historical_runtime_acceptance",
+    "scope": "Applied after parsing a JSON object: exactly the six top-level fields, supporting_evidence is an array, and safety_flag is none, caution or stop. The five batch validators implement the same acceptance conditions.",
+    "omitted_checks": "The historical validator did not enforce string types for the other top-level fields, evidence-item fields/types, evidence count, direction categories, sentence limits, or semantic grounding.",
+    "saved_output_check": {
+      "outputs": 2230,
+      "accepted_by_historical_runtime_checks": 2230,
+      "outputs_with_identified_prompt_structural_deviations": 35,
+      "more_than_five_evidence_objects": 27,
+      "unsupported_direction_values": 8,
+      "overlap_between_these_two_groups": 0,
+      "primary_outputs_with_deviations": 24,
+      "robustness_outputs_with_deviations": 11
+    },
+    "interpretation": "Runtime acceptance does not imply full prompt-contract compliance. Saved outputs are retained without correction. The structural check does not independently adjudicate sentence counts or semantic appropriateness."
+  },
+  "x-documentation-sources": [
+    "Historical prompt JSON instructions and safety-flag rules",
+    "Identical validate_payload functions in the five generation-batch scripts",
+    "scripts/23_analyze_wave3_grounding_failure_cases.py:96-112",
+    "scripts/21_run_wave2_clmm_primary_manual_audit.py:102-118"
+  ]
+}

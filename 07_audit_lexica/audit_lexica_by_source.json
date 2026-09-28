@@ -1,0 +1,713 @@
+{
+  "created": "2026-09-28",
+  "status": "Exact extraction of lexica and literal regular-expression calls from historical source files, assembled on 2026-09-28. The original expressions and line references are preserved by source; source paths identify the historical files and are not claims that each path exists in this minimal publication folder.",
+  "versions": [
+    {
+      "source_relative_path": "scripts/06_post_lock_prompt_audit.py",
+      "named_lexica": {
+        "FORBIDDEN_TERMS": [
+          "HRV",
+          "H.R.V.",
+          "heart rate variability",
+          "heart-rate variability",
+          "HR variability",
+          "heart rate variation",
+          "heart-rate variation",
+          "HRV-related",
+          "autonomic balance",
+          "parasympathetic status",
+          "vagal tone",
+          "autonomic recovery",
+          "parasympathetic recovery"
+        ],
+        "TREND_MARKERS": [
+          "7d",
+          "28d",
+          "delta",
+          "last3",
+          "acwr",
+          "monotony",
+          "strain",
+          "rolling",
+          "trend",
+          "direction"
+        ]
+      },
+      "literal_regex_calls": [
+        {
+          "source_line": 57,
+          "call": "findall",
+          "pattern": "===[^=]+===\\n((?:- [^\\n]+\\n?)+)",
+          "exact_expression": "re.findall(r\"===[^=]+===\\n((?:- [^\\n]+\\n?)+)\", str(prompt))"
+        },
+        {
+          "source_line": 58,
+          "call": "findall",
+          "pattern": "-\\s*([A-Za-z][A-Za-z0-9_]+)\\s*:\\s*([^\\n]+)",
+          "exact_expression": "re.findall(r\"-\\s*([A-Za-z][A-Za-z0-9_]+)\\s*:\\s*([^\\n]+)\", block)"
+        },
+        {
+          "source_line": 60,
+          "call": "search",
+          "pattern": "Here are today's .*?\\n\\n(.+?)(?:\\n\\n|$)",
+          "exact_expression": "re.search(r\"Here are today's .*?\\n\\n(.+?)(?:\\n\\n|$)\", str(prompt), re.DOTALL)"
+        },
+        {
+          "source_line": 62,
+          "call": "findall",
+          "pattern": "([A-Za-z][A-Za-z0-9_]+)\\s*=\\s*([^,\\n]+)",
+          "exact_expression": "re.findall(r\"([A-Za-z][A-Za-z0-9_]+)\\s*=\\s*([^,\\n]+)\", flat_match.group(1))"
+        },
+        {
+          "source_line": 102,
+          "call": "compile",
+          "pattern": "\\b(subjective|readiness|wellness|feeling|self[- ]reported|perceived|autonomic|parasympathetic|vagal|hrv|heart rate variability)\\b",
+          "exact_expression": "re.compile(\n        r\"\\b(subjective|readiness|wellness|feeling|self[- ]reported|perceived|autonomic|parasympathetic|vagal|hrv|heart rate variability)\\b\",\n        re.IGNORECASE,\n    )"
+        },
+        {
+          "source_line": 106,
+          "call": "compile",
+          "pattern": "\\b(sleep|resting heart rate|heart[- ]rate|activity|training load)\\b",
+          "exact_expression": "re.compile(r\"\\b(sleep|resting heart rate|heart[- ]rate|activity|training load)\\b\", re.IGNORECASE)"
+        },
+        {
+          "source_line": 107,
+          "call": "compile",
+          "pattern": "\\b(unavailable|withheld|not available|cannot assess|cannot infer|missing|intentionally withheld)\\b",
+          "exact_expression": "re.compile(\n        r\"\\b(unavailable|withheld|not available|cannot assess|cannot infer|missing|intentionally withheld)\\b\",\n        re.IGNORECASE,\n    )"
+        },
+        {
+          "source_line": 158,
+          "call": "search",
+          "pattern": "No clear acute risk",
+          "exact_expression": "re.search(r\"No clear acute risk\", risk, re.IGNORECASE)"
+        },
+        {
+          "source_line": 160,
+          "call": "search",
+          "pattern": "\\b(severe|stop|medical|injury|urgent|high risk)\\b",
+          "exact_expression": "re.search(r\"\\b(severe|stop|medical|injury|urgent|high risk)\\b\", risk + \" \" + suggestion, re.IGNORECASE)"
+        }
+      ],
+      "application_context": {
+        "text_scanned": "raw_text for forbidden literal strings and risk/proxy wording; parsed supporting_evidence and visible prompt values for grounding checks.",
+        "forbidden_matching": "Each FORBIDDEN_TERMS entry is escaped and searched case-insensitively as a literal substring.",
+        "missing_values": [
+          "",
+          "missing",
+          "nan",
+          "none"
+        ],
+        "allowed_direction_when_missing": [
+          null,
+          "null"
+        ],
+        "trend_rule": "Case-insensitive TREND_MARKERS substring match on the evidence variable, excluding variables ending _today. Arm D is flagged when no evidence variable matches; this check does not require a nonmissing trend to be visible.",
+        "special_exception": "The C-A proxy rule requires subjective and proxy patterns and excludes raw_text matching the unavailable pattern. This exception does not apply to the general forbidden-term scan."
+      }
+    },
+    {
+      "source_relative_path": "scripts/23_analyze_wave3_grounding_failure_cases.py",
+      "named_lexica": {
+        "HRV_FORBIDDEN_PATTERNS": [
+          "\\bHRV\\b",
+          "\\bH\\.R\\.V\\.\\b",
+          "heart rate variability",
+          "heart-rate variability",
+          "\\bHR variability\\b",
+          "heart rate variation",
+          "heart-rate variation",
+          "HRV-related",
+          "autonomic balance",
+          "parasympathetic status",
+          "vagal tone",
+          "autonomic recovery",
+          "parasympathetic recovery"
+        ],
+        "RECOVERY_PROXY_RE": "re.compile(r\"nervous[- ]system recovery|overtraining|overreaching|diagnos\", re.I)"
+      },
+      "literal_regex_calls": [
+        {
+          "source_line": 60,
+          "call": "compile",
+          "pattern": "nervous[- ]system recovery|overtraining|overreaching|diagnos",
+          "exact_expression": "re.compile(r\"nervous[- ]system recovery|overtraining|overreaching|diagnos\", re.I)"
+        },
+        {
+          "source_line": 61,
+          "call": "compile",
+          "pattern": "(?:7d|28d|delta|last3_direction|acwr|monotony|strain|rolling|trend)",
+          "exact_expression": "re.compile(r\"(?:7d|28d|delta|last3_direction|acwr|monotony|strain|rolling|trend)\", re.I)"
+        },
+        {
+          "source_line": 86,
+          "call": "findall",
+          "pattern": "===[^=]+===\\n((?:- [^\\n]+\\n?)+)",
+          "exact_expression": "re.findall(r\"===[^=]+===\\n((?:- [^\\n]+\\n?)+)\", str(user_prompt))"
+        },
+        {
+          "source_line": 87,
+          "call": "findall",
+          "pattern": "-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)",
+          "exact_expression": "re.findall(r\"-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)\", block)"
+        },
+        {
+          "source_line": 89,
+          "call": "search",
+          "pattern": "Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)",
+          "exact_expression": "re.search(r\"Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)\", str(user_prompt), re.DOTALL)"
+        },
+        {
+          "source_line": 91,
+          "call": "findall",
+          "pattern": "([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)",
+          "exact_expression": "re.findall(r\"([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)\", flat_match.group(1))"
+        },
+        {
+          "source_line": 104,
+          "call": "search",
+          "pattern": "\\b(stop|no training|medical|clinician|do not train)\\b",
+          "exact_expression": "re.search(r\"\\b(stop|no training|medical|clinician|do not train)\\b\", text)"
+        },
+        {
+          "source_line": 106,
+          "call": "search",
+          "pattern": "\\b(rest|active recovery|reduce|lower|easy|light|deload)\\b",
+          "exact_expression": "re.search(r\"\\b(rest|active recovery|reduce|lower|easy|light|deload)\\b\", text)"
+        },
+        {
+          "source_line": 108,
+          "call": "search",
+          "pattern": "\\b(increase|progress|higher|harder)\\b",
+          "exact_expression": "re.search(r\"\\b(increase|progress|higher|harder)\\b\", text)"
+        },
+        {
+          "source_line": 110,
+          "call": "search",
+          "pattern": "\\b(maintain|same|normal|usual)\\b",
+          "exact_expression": "re.search(r\"\\b(maintain|same|normal|usual)\\b\", text)"
+        },
+        {
+          "source_line": 282,
+          "call": "search",
+          "pattern": "\\b(stop|avoid hard training|no training)\\b",
+          "exact_expression": "re.search(r\"\\b(stop|avoid hard training|no training)\\b\", text, flags=re.I)"
+        },
+        {
+          "source_line": 282,
+          "call": "search",
+          "pattern": "\\b(injury|severe|very low|multiple|high risk)\\b",
+          "exact_expression": "re.search(r\"\\b(injury|severe|very low|multiple|high risk)\\b\", text, flags=re.I)"
+        },
+        {
+          "source_line": 284,
+          "call": "search",
+          "pattern": "\\b(increase|progress|harder|high intensity)\\b",
+          "exact_expression": "re.search(r\"\\b(increase|progress|harder|high intensity)\\b\", text, flags=re.I)"
+        },
+        {
+          "source_line": 284,
+          "call": "search",
+          "pattern": "\\b(low readiness|poor sleep|injury|high fatigue|elevated soreness|high stress)\\b",
+          "exact_expression": "re.search(r\"\\b(low readiness|poor sleep|injury|high fatigue|elevated soreness|high stress)\\b\", text, flags=re.I)"
+        },
+        {
+          "source_line": 287,
+          "call": "search",
+          "pattern": "\\b(missing|unavailable|masked|limited)\\b",
+          "exact_expression": "re.search(r\"\\b(missing|unavailable|masked|limited)\\b\", text, flags=re.I)"
+        }
+      ],
+      "application_context": {
+        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload; decision_bucket separately joins risk_identification, training_adjustment_suggestion and raw_text and lowercases the result.",
+        "matching": "Case-insensitive regular expressions for HRV and the wider recovery-proxy/diagnostic pattern. Decision categories use first-match priority as documented in ../02_schema_labels/OUTPUT_SCHEMA_AND_LABELS.json.",
+        "missing_values": [
+          "missing",
+          "nan",
+          ""
+        ],
+        "allowed_direction_when_missing": [
+          null,
+          "null",
+          "",
+          "→"
+        ],
+        "grounding_rule": "Evidence variables must exactly match names extracted from the actual prompt. Missingness is evaluated after stripping and lowercasing the extracted value.",
+        "failure_mode_rules": {
+          "unsupported_reasoning": "Any grounding issue, HRV-specific hit, or wider recovery-proxy/diagnostic hit.",
+          "vague_recommendation": "decision_bucket is unclear, or a nonmissing mean D2 score is <=2.5.",
+          "overreaction": "Stop/avoid-hard-training/no-training wording without injury/severe/very-low/multiple/high-risk wording, using the exact expressions below.",
+          "over-persistence": "Increase/progress/harder/high-intensity wording together with low-readiness/poor-sleep/injury/high-fatigue/elevated-soreness/high-stress wording.",
+          "missing-data breakdown": "For a Wave 3 missingness output: a grounding issue, or no missing/unavailable/masked/limited wording."
+        }
+      }
+    },
+    {
+      "source_relative_path": "scripts/21_run_wave2_clmm_primary_manual_audit.py",
+      "named_lexica": {},
+      "literal_regex_calls": [
+        {
+          "source_line": 76,
+          "call": "sub",
+          "pattern": "\\s+",
+          "exact_expression": "re.sub(r\"\\s+\", \" \", str(raw or \"\"))"
+        },
+        {
+          "source_line": 110,
+          "call": "search",
+          "pattern": "\\b(stop|no training|medical|clinician|do not train)\\b",
+          "exact_expression": "re.search(r\"\\b(stop|no training|medical|clinician|do not train)\\b\", text)"
+        },
+        {
+          "source_line": 112,
+          "call": "search",
+          "pattern": "\\b(rest|active recovery|reduce|lower|easy|light)\\b",
+          "exact_expression": "re.search(r\"\\b(rest|active recovery|reduce|lower|easy|light)\\b\", text)"
+        },
+        {
+          "source_line": 114,
+          "call": "search",
+          "pattern": "\\b(increase|progress|higher|harder)\\b",
+          "exact_expression": "re.search(r\"\\b(increase|progress|higher|harder)\\b\", text)"
+        },
+        {
+          "source_line": 116,
+          "call": "search",
+          "pattern": "\\b(maintain|same|normal|usual)\\b",
+          "exact_expression": "re.search(r\"\\b(maintain|same|normal|usual)\\b\", text)"
+        }
+      ],
+      "application_context": {
+        "role": "Review-support table construction and an earlier decision_bucket function.",
+        "decision_rule_difference": "Same category priority as script 23, but the reduce_or_recovery pattern does not include deload.",
+        "adjudication_limit": "Program-generated review-support notes are not independent per-output human adjudication records."
+      }
+    },
+    {
+      "source_relative_path": "experiments/lrrif_v3_1/main_runs/wave1_siliconflow/run_wave1_siliconflow.py",
+      "named_lexica": {
+        "HRV_FORBIDDEN_PATTERNS": [
+          "\\bHRV\\b",
+          "\\bH\\.R\\.V\\.\\b",
+          "heart rate variability",
+          "heart-rate variability",
+          "\\bHR variability\\b",
+          "heart rate variation",
+          "heart-rate variation",
+          "HRV-related",
+          "autonomic balance",
+          "parasympathetic status",
+          "vagal tone",
+          "autonomic recovery",
+          "parasympathetic recovery"
+        ],
+        "RECOVERY_PROXY_OR_DIAGNOSTIC_PATTERNS": [
+          "nervous[- ]system recovery",
+          "nervous[- ]system recovery proxies",
+          "overtraining"
+        ]
+      },
+      "literal_regex_calls": [
+        {
+          "source_line": 124,
+          "call": "findall",
+          "pattern": "\\b\\w+\\b",
+          "exact_expression": "re.findall(r\"\\b\\w+\\b\", text)"
+        },
+        {
+          "source_line": 299,
+          "call": "findall",
+          "pattern": "===[^=]+===\\n((?:- [^\\n]+\\n?)+)",
+          "exact_expression": "re.findall(r\"===[^=]+===\\n((?:- [^\\n]+\\n?)+)\", str(user_prompt))"
+        },
+        {
+          "source_line": 300,
+          "call": "findall",
+          "pattern": "-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)",
+          "exact_expression": "re.findall(r\"-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)\", block)"
+        },
+        {
+          "source_line": 302,
+          "call": "search",
+          "pattern": "Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)",
+          "exact_expression": "re.search(r\"Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)\", str(user_prompt), re.DOTALL)"
+        },
+        {
+          "source_line": 304,
+          "call": "findall",
+          "pattern": "([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)",
+          "exact_expression": "re.findall(r\"([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)\", flat_match.group(1))"
+        },
+        {
+          "source_line": 363,
+          "call": "search",
+          "pattern": "(7d|28d|delta|last3_direction|acwr|monotony|strain)",
+          "exact_expression": "re.search(r\"(7d|28d|delta|last3_direction|acwr|monotony|strain)\", k)"
+        },
+        {
+          "source_line": 376,
+          "call": "search",
+          "pattern": "\\b(injury|stop|severe pain|medical diagnosis)\\b",
+          "exact_expression": "re.search(r\"\\b(injury|stop|severe pain|medical diagnosis)\\b\", risk_text, flags=re.IGNORECASE)"
+        }
+      ],
+      "application_context": {
+        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload, for HRV and recovery-proxy/diagnostic searches.",
+        "matching": "Case-insensitive regular-expression search; generation-stage recovery/diagnostic wording uses the narrower pattern lists retained below.",
+        "allowed_direction_when_missing": [
+          null,
+          "null",
+          "",
+          "→"
+        ],
+        "grounding_rule": "Evidence variables must exactly match visible input-variable names; a missing input value with another direction is flagged.",
+        "trend_rule": "Arm D trend citation is evaluated only where nonmissing trend variables are visible, using the source-specific trend expressions retained below."
+      }
+    },
+    {
+      "source_relative_path": "experiments/lrrif_v3_1/main_runs/wave2_openrouter_gpt_oss_20b_free/run_wave2_openrouter_gpt_oss_20b_free.py",
+      "named_lexica": {
+        "HRV_FORBIDDEN_PATTERNS": [
+          "\\bHRV\\b",
+          "\\bH\\.R\\.V\\.\\b",
+          "heart rate variability",
+          "heart-rate variability",
+          "\\bHR variability\\b",
+          "heart rate variation",
+          "heart-rate variation",
+          "HRV-related",
+          "autonomic balance",
+          "parasympathetic status",
+          "vagal tone",
+          "autonomic recovery",
+          "parasympathetic recovery"
+        ],
+        "RECOVERY_PROXY_OR_DIAGNOSTIC_PATTERNS": [
+          "nervous[- ]system recovery",
+          "nervous[- ]system recovery proxies",
+          "overtraining"
+        ]
+      },
+      "literal_regex_calls": [
+        {
+          "source_line": 128,
+          "call": "findall",
+          "pattern": "\\b\\w+\\b",
+          "exact_expression": "re.findall(r\"\\b\\w+\\b\", text)"
+        },
+        {
+          "source_line": 318,
+          "call": "findall",
+          "pattern": "===[^=]+===\\n((?:- [^\\n]+\\n?)+)",
+          "exact_expression": "re.findall(r\"===[^=]+===\\n((?:- [^\\n]+\\n?)+)\", str(user_prompt))"
+        },
+        {
+          "source_line": 319,
+          "call": "findall",
+          "pattern": "-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)",
+          "exact_expression": "re.findall(r\"-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)\", block)"
+        },
+        {
+          "source_line": 321,
+          "call": "search",
+          "pattern": "Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)",
+          "exact_expression": "re.search(r\"Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)\", str(user_prompt), re.DOTALL)"
+        },
+        {
+          "source_line": 323,
+          "call": "findall",
+          "pattern": "([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)",
+          "exact_expression": "re.findall(r\"([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)\", flat_match.group(1))"
+        },
+        {
+          "source_line": 407,
+          "call": "search",
+          "pattern": "(7d|28d|delta|last3_direction|acwr|monotony|strain)",
+          "exact_expression": "re.search(r\"(7d|28d|delta|last3_direction|acwr|monotony|strain)\", k)"
+        },
+        {
+          "source_line": 420,
+          "call": "search",
+          "pattern": "\\b(injury|stop|severe pain|medical diagnosis)\\b",
+          "exact_expression": "re.search(r\"\\b(injury|stop|severe pain|medical diagnosis)\\b\", risk_text, flags=re.IGNORECASE)"
+        }
+      ],
+      "application_context": {
+        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload, for HRV and recovery-proxy/diagnostic searches.",
+        "matching": "Case-insensitive regular-expression search; generation-stage recovery/diagnostic wording uses the narrower pattern lists retained below.",
+        "allowed_direction_when_missing": [
+          null,
+          "null",
+          "",
+          "→"
+        ],
+        "grounding_rule": "Evidence variables must exactly match visible input-variable names; a missing input value with another direction is flagged.",
+        "trend_rule": "Arm D trend citation is evaluated only where nonmissing trend variables are visible, using the source-specific trend expressions retained below."
+      }
+    },
+    {
+      "source_relative_path": "experiments/lrrif_v3_1/main_runs/wave2_siliconflow_deepseek_v4_flash_paid/run_wave2_siliconflow_deepseek_v4_flash_paid.py",
+      "named_lexica": {
+        "HRV_FORBIDDEN_PATTERNS": [
+          "\\bHRV\\b",
+          "\\bH\\.R\\.V\\.\\b",
+          "heart rate variability",
+          "heart-rate variability",
+          "\\bHR variability\\b",
+          "heart rate variation",
+          "heart-rate variation",
+          "HRV-related",
+          "autonomic balance",
+          "parasympathetic status",
+          "vagal tone",
+          "autonomic recovery",
+          "parasympathetic recovery"
+        ],
+        "RECOVERY_PROXY_OR_DIAGNOSTIC_PATTERNS": [
+          "nervous[- ]system recovery",
+          "nervous[- ]system recovery proxies",
+          "overtraining"
+        ]
+      },
+      "literal_regex_calls": [
+        {
+          "source_line": 128,
+          "call": "findall",
+          "pattern": "\\b\\w+\\b",
+          "exact_expression": "re.findall(r\"\\b\\w+\\b\", text)"
+        },
+        {
+          "source_line": 318,
+          "call": "findall",
+          "pattern": "===[^=]+===\\n((?:- [^\\n]+\\n?)+)",
+          "exact_expression": "re.findall(r\"===[^=]+===\\n((?:- [^\\n]+\\n?)+)\", str(user_prompt))"
+        },
+        {
+          "source_line": 319,
+          "call": "findall",
+          "pattern": "-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)",
+          "exact_expression": "re.findall(r\"-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)\", block)"
+        },
+        {
+          "source_line": 321,
+          "call": "search",
+          "pattern": "Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)",
+          "exact_expression": "re.search(r\"Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)\", str(user_prompt), re.DOTALL)"
+        },
+        {
+          "source_line": 323,
+          "call": "findall",
+          "pattern": "([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)",
+          "exact_expression": "re.findall(r\"([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)\", flat_match.group(1))"
+        },
+        {
+          "source_line": 407,
+          "call": "search",
+          "pattern": "(7d|28d|delta|last3_direction|acwr|monotony|strain)",
+          "exact_expression": "re.search(r\"(7d|28d|delta|last3_direction|acwr|monotony|strain)\", k)"
+        },
+        {
+          "source_line": 420,
+          "call": "search",
+          "pattern": "\\b(injury|stop|severe pain|medical diagnosis)\\b",
+          "exact_expression": "re.search(r\"\\b(injury|stop|severe pain|medical diagnosis)\\b\", risk_text, flags=re.IGNORECASE)"
+        }
+      ],
+      "application_context": {
+        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload, for HRV and recovery-proxy/diagnostic searches.",
+        "matching": "Case-insensitive regular-expression search; generation-stage recovery/diagnostic wording uses the narrower pattern lists retained below.",
+        "allowed_direction_when_missing": [
+          null,
+          "null",
+          "",
+          "→"
+        ],
+        "grounding_rule": "Evidence variables must exactly match visible input-variable names; a missing input value with another direction is flagged.",
+        "trend_rule": "Arm D trend citation is evaluated only where nonmissing trend variables are visible, using the source-specific trend expressions retained below."
+      }
+    },
+    {
+      "source_relative_path": "experiments/lrrif_v3_1/main_runs/wave2_siliconflow_minimax_m2_5_paid/run_wave2_siliconflow_minimax_m2_5_paid.py",
+      "named_lexica": {
+        "HRV_FORBIDDEN_PATTERNS": [
+          "\\bHRV\\b",
+          "\\bH\\.R\\.V\\.\\b",
+          "heart rate variability",
+          "heart-rate variability",
+          "\\bHR variability\\b",
+          "heart rate variation",
+          "heart-rate variation",
+          "HRV-related",
+          "autonomic balance",
+          "parasympathetic status",
+          "vagal tone",
+          "autonomic recovery",
+          "parasympathetic recovery"
+        ],
+        "RECOVERY_PROXY_OR_DIAGNOSTIC_PATTERNS": [
+          "nervous[- ]system recovery",
+          "nervous[- ]system recovery proxies",
+          "overtraining"
+        ]
+      },
+      "literal_regex_calls": [
+        {
+          "source_line": 128,
+          "call": "findall",
+          "pattern": "\\b\\w+\\b",
+          "exact_expression": "re.findall(r\"\\b\\w+\\b\", text)"
+        },
+        {
+          "source_line": 318,
+          "call": "findall",
+          "pattern": "===[^=]+===\\n((?:- [^\\n]+\\n?)+)",
+          "exact_expression": "re.findall(r\"===[^=]+===\\n((?:- [^\\n]+\\n?)+)\", str(user_prompt))"
+        },
+        {
+          "source_line": 319,
+          "call": "findall",
+          "pattern": "-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)",
+          "exact_expression": "re.findall(r\"-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)\", block)"
+        },
+        {
+          "source_line": 321,
+          "call": "search",
+          "pattern": "Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)",
+          "exact_expression": "re.search(r\"Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)\", str(user_prompt), re.DOTALL)"
+        },
+        {
+          "source_line": 323,
+          "call": "findall",
+          "pattern": "([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)",
+          "exact_expression": "re.findall(r\"([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)\", flat_match.group(1))"
+        },
+        {
+          "source_line": 407,
+          "call": "search",
+          "pattern": "(7d|28d|delta|last3_direction|acwr|monotony|strain)",
+          "exact_expression": "re.search(r\"(7d|28d|delta|last3_direction|acwr|monotony|strain)\", k)"
+        },
+        {
+          "source_line": 420,
+          "call": "search",
+          "pattern": "\\b(injury|stop|severe pain|medical diagnosis)\\b",
+          "exact_expression": "re.search(r\"\\b(injury|stop|severe pain|medical diagnosis)\\b\", risk_text, flags=re.IGNORECASE)"
+        }
+      ],
+      "application_context": {
+        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload, for HRV and recovery-proxy/diagnostic searches.",
+        "matching": "Case-insensitive regular-expression search; generation-stage recovery/diagnostic wording uses the narrower pattern lists retained below.",
+        "allowed_direction_when_missing": [
+          null,
+          "null",
+          "",
+          "→"
+        ],
+        "grounding_rule": "Evidence variables must exactly match visible input-variable names; a missing input value with another direction is flagged.",
+        "trend_rule": "Arm D trend citation is evaluated only where nonmissing trend variables are visible, using the source-specific trend expressions retained below."
+      }
+    },
+    {
+      "source_relative_path": "experiments/lrrif_v3_1/main_runs/wave3_robustness_minimax/run_wave3_robustness_minimax.py",
+      "named_lexica": {
+        "HRV_FORBIDDEN_PATTERNS": [
+          "\\bHRV\\b",
+          "\\bH\\.R\\.V\\.\\b",
+          "heart rate variability",
+          "heart-rate variability",
+          "\\bHR variability\\b",
+          "heart rate variation",
+          "heart-rate variation",
+          "HRV-related",
+          "autonomic balance",
+          "parasympathetic status",
+          "vagal tone",
+          "autonomic recovery",
+          "parasympathetic recovery"
+        ]
+      },
+      "literal_regex_calls": [
+        {
+          "source_line": 56,
+          "call": "compile",
+          "pattern": "(?:7d|28d|delta|last3_direction|acwr|monotony|strain|rolling|trend)",
+          "exact_expression": "re.compile(r\"(?:7d|28d|delta|last3_direction|acwr|monotony|strain|rolling|trend)\", re.I)"
+        },
+        {
+          "source_line": 149,
+          "call": "findall",
+          "pattern": "\\b\\w+\\b",
+          "exact_expression": "re.findall(r\"\\b\\w+\\b\", text)"
+        },
+        {
+          "source_line": 159,
+          "call": "findall",
+          "pattern": "===[^=]+===\\n((?:- [^\\n]+\\n?)+)",
+          "exact_expression": "re.findall(r\"===[^=]+===\\n((?:- [^\\n]+\\n?)+)\", str(user_prompt))"
+        },
+        {
+          "source_line": 160,
+          "call": "findall",
+          "pattern": "-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)",
+          "exact_expression": "re.findall(r\"-\\s*([a-z][a-z0-9_]+)\\s*:\\s*([^\\n]+)\", block)"
+        },
+        {
+          "source_line": 162,
+          "call": "search",
+          "pattern": "Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)",
+          "exact_expression": "re.search(r\"Here are today's [^\\n]*monitoring data\\..*?\\n\\n(.+?)(?:\\n\\n|$)\", str(user_prompt), re.DOTALL)"
+        },
+        {
+          "source_line": 164,
+          "call": "findall",
+          "pattern": "([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)",
+          "exact_expression": "re.findall(r\"([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)\", flat_match.group(1))"
+        },
+        {
+          "source_line": 277,
+          "call": "sub",
+          "pattern": "Task: .+?(?=\\nGrounding rules:)",
+          "exact_expression": "re.sub(r\"Task: .+?(?=\\nGrounding rules:)\", variants[variant], user_prompt, count=1, flags=re.DOTALL)"
+        },
+        {
+          "source_line": 289,
+          "call": "sub",
+          "pattern": "(-\\s*[a-z][a-z0-9_]+\\s*:\\s*)([^\\n]+)",
+          "exact_expression": "re.sub(r\"(-\\s*[a-z][a-z0-9_]+\\s*:\\s*)([^\\n]+)\", r\"\\1missing\", body)"
+        },
+        {
+          "source_line": 301,
+          "call": "sub",
+          "pattern": "\\b([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)",
+          "exact_expression": "re.sub(r\"\\b([a-z][a-z0-9_]+)\\s*=\\s*([^,\\n]+)\", repl, user_prompt)"
+        },
+        {
+          "source_line": 348,
+          "call": "sub",
+          "pattern": "- Non-missing true trend variables available: .+",
+          "exact_expression": "re.sub(\n            r\"- Non-missing true trend variables available: .+\",\n            \"- Non-missing true trend variables available: none because Block E is masked for Wave 3 missingness robustness.\",\n            masked,\n        )"
+        }
+      ],
+      "application_context": {
+        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload, for HRV and recovery-proxy/diagnostic searches.",
+        "matching": "Case-insensitive regular-expression search; generation-stage recovery/diagnostic wording uses the narrower pattern lists retained below.",
+        "allowed_direction_when_missing": [
+          null,
+          "null",
+          "",
+          "→"
+        ],
+        "grounding_rule": "Evidence variables must exactly match visible input-variable names; a missing input value with another direction is flagged.",
+        "trend_rule": "Arm D trend citation is evaluated only where nonmissing trend variables are visible, using the source-specific trend expressions retained below.",
+        "wave3_addition": "For mask_block_e, also checks leakage of trend variables."
+      }
+    }
+  ],
+  "description": "Audit lexica for the study. Distinct stages used different rules and scanned fields; the historical versions must not be merged into one purported original lexicon. Parsing expressions are retained because they determine the visible input variables used by grounding checks.",
+  "interpretation_notes": [
+    "Most lexical rules do not resolve negation. A keyword hit is not an independent clinical or human-adjudicated error determination.",
+    "Batch reports may count output-pattern matches whereas analysis indicators are output-level booleans; counts based on these units or on different rule versions are not interchangeable.",
+    "The final primary comparison uses Arms A-D. The earlier post-lock audit also contains historical C-A and D-E condition rules.",
+    "Line numbers and source paths refer to the historical source version. No new lexical rules replace those preserved below."
+  ]
+}
