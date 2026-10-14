@@ -1,31 +1,85 @@
-# Exact prompt templates for Arms A–D
+# Four-arm prompt templates
 
-This file presents the complete system and user prompt templates for the four primary prompt arms. The templates were extracted from the 400 stored primary prompts (100 cases × four arms). Fixed wording, variable names, ordering, and output requirements are preserved. These extracted files are not claimed to be separate templates archived before generation.
+Templates extracted from 400 saved primary prompts (100 cases × four arms). All original instructions and wording are retained. `{{value.VARIABLE_NAME}}` represents the original displayed value, including `missing`; `{{arm_d_available_trends}}` represents the original case-specific availability list.
 
-Case-specific displayed values are represented by `{{value.VARIABLE_NAME}}`; each slot takes the original displayed string, including `missing` where applicable. Arm D also contains `{{arm_d_available_trends}}`, the case-specific list following “Non-missing true trend variables available”. This file presents the four templates, rather than the 400 fully instantiated case prompts.
+The Arm D availability list contained at most the first 15 qualifying trend variables, or `none non-missing`. In 21/100 cases, it included a variable displayed as `missing`. Exact case reconstruction requires the original displayed values and historical list strings; the placeholders alone do not supply them.
 
-The historical Arm D availability list named at most the first 15 qualifying trend variables, or used `none non-missing`. In 21 of 100 Arm D cases, the list included at least one variable displayed as `missing` in the same prompt. Exact reconstruction requires the saved historical list; deriving a corrected list from displayed values would change the original input. The templates below preserve the original instructions.
+## Assembly
 
-This file alone does not reconstruct all 400 case-specific inputs: exact reconstruction also requires the historical case values and Arm D availability strings retained in the supporting records.
+Shared blocks are stored once. Headings and assembly instructions are not model input. Join user blocks with two newline characters, then append **Shared rules and output schema** with one newline.
 
-Only the text within the code blocks constitutes prompt content; the surrounding headings and explanations are documentation.
+| Arm | System prompt | User prompt blocks, in order |
+| --- | --- | --- |
+| A | System A/B | Arm A |
+| B | System A/B | Arm B |
+| C | System C/D | Current input C/D → Arm C |
+| D | System C/D | Current input C/D → Arm D |
 
-## Arm A
+## Shared blocks
 
-### System prompt
+### System A/B
 
 ```text
 You are a helpful assistant evaluating de-identified daily monitoring data. Return exactly one compact JSON object matching the requested schema. Do not add markdown, explanations outside JSON, or variables not provided.
 ```
 
-### User prompt
+### System C/D
 
 ```text
-Here are today's de-identified monitoring data. Provide a concise next-day training/activity suggestion.
+You are a sport scientist consultant evaluating de-identified daily monitoring data for research-only decision-support evaluation. The data may come from active adults rather than elite athletes, so do not overstate athlete status. This is not autonomous prescription, diagnosis, or clinical advice. Return exactly one compact JSON object matching the requested schema. Do not add markdown, explanations outside JSON, or variables not provided.
+```
 
-fatigue={{value.fatigue}}, mood={{value.mood}}, readiness={{value.readiness}}, sleep_quality={{value.sleep_quality}}, soreness={{value.soreness}}, soreness_area_count={{value.soreness_area_count}}, stress={{value.stress}}, sleep_duration_h={{value.sleep_duration_h}}, fb_sleep_score={{value.fb_sleep_score}}, fb_sleep_efficiency={{value.fb_sleep_efficiency}}, fb_minutes_asleep={{value.fb_minutes_asleep}}, fb_minutes_awake={{value.fb_minutes_awake}}, fb_time_in_bed={{value.fb_time_in_bed}}, fb_deep_sleep_min={{value.fb_deep_sleep_min}}, fb_sleep_deep_min={{value.fb_sleep_deep_min}}, fb_sleep_light_min={{value.fb_sleep_light_min}}, fb_sleep_rem_min={{value.fb_sleep_rem_min}}, fb_sleep_wake_count={{value.fb_sleep_wake_count}}, training_count={{value.training_count}}, rpe_mean={{value.rpe_mean}}, rpe_max={{value.rpe_max}}, duration_total={{value.duration_total}}, srpe_total={{value.srpe_total}}, fb_steps={{value.fb_steps}}, fb_calories={{value.fb_calories}}, fb_distance={{value.fb_distance}}, fb_hr_zone_below1={{value.fb_hr_zone_below1}}, fb_hr_zone_1={{value.fb_hr_zone_1}}, fb_hr_zone_2={{value.fb_hr_zone_2}}, fb_hr_zone_3={{value.fb_hr_zone_3}}, fb_exercise_count={{value.fb_exercise_count}}, fb_exercise_calories={{value.fb_exercise_calories}}, fb_exercise_duration_min={{value.fb_exercise_duration_min}}, fb_exercise_avg_hr={{value.fb_exercise_avg_hr}}, fb_exercise_steps={{value.fb_exercise_steps}}, fb_exercise_distance={{value.fb_exercise_distance}}
+### Current input C/D
 
-Task: using only the listed flat variables, summarize the current status, identify any clear risk or concern, suggest a specific Day t+1 training/activity adjustment, cite exact input variables as evidence, and set a safety flag.
+```text
+=== Block A — Current Subjective State ===
+- fatigue: {{value.fatigue}}
+- mood: {{value.mood}}
+- readiness: {{value.readiness}}
+- sleep_quality: {{value.sleep_quality}}
+- soreness: {{value.soreness}}
+- soreness_area_count: {{value.soreness_area_count}}
+- stress: {{value.stress}}
+
+=== Block B — Sleep / Recovery ===
+- sleep_duration_h: {{value.sleep_duration_h}}
+- fb_sleep_score: {{value.fb_sleep_score}}
+- fb_sleep_efficiency: {{value.fb_sleep_efficiency}}
+- fb_minutes_asleep: {{value.fb_minutes_asleep}}
+- fb_minutes_awake: {{value.fb_minutes_awake}}
+- fb_time_in_bed: {{value.fb_time_in_bed}}
+- fb_deep_sleep_min: {{value.fb_deep_sleep_min}}
+- fb_sleep_deep_min: {{value.fb_sleep_deep_min}}
+- fb_sleep_light_min: {{value.fb_sleep_light_min}}
+- fb_sleep_rem_min: {{value.fb_sleep_rem_min}}
+- fb_sleep_wake_count: {{value.fb_sleep_wake_count}}
+
+=== Block C — Internal Training Load ===
+- training_count: {{value.training_count}}
+- rpe_mean: {{value.rpe_mean}}
+- rpe_max: {{value.rpe_max}}
+- duration_total: {{value.duration_total}}
+- srpe_total: {{value.srpe_total}}
+
+=== Block D — External Activity Context ===
+- fb_steps: {{value.fb_steps}}
+- fb_calories: {{value.fb_calories}}
+- fb_distance: {{value.fb_distance}}
+- fb_hr_zone_below1: {{value.fb_hr_zone_below1}}
+- fb_hr_zone_1: {{value.fb_hr_zone_1}}
+- fb_hr_zone_2: {{value.fb_hr_zone_2}}
+- fb_hr_zone_3: {{value.fb_hr_zone_3}}
+- fb_exercise_count: {{value.fb_exercise_count}}
+- fb_exercise_calories: {{value.fb_exercise_calories}}
+- fb_exercise_duration_min: {{value.fb_exercise_duration_min}}
+- fb_exercise_avg_hr: {{value.fb_exercise_avg_hr}}
+- fb_exercise_steps: {{value.fb_exercise_steps}}
+- fb_exercise_distance: {{value.fb_exercise_distance}}
+```
+
+### Shared rules and output schema
+
+```text
 Grounding rules: Do not invoke variables not listed above. Do not infer hidden data. Every supporting_evidence.variable must be an exact variable name shown in the input. Do not discuss unlisted cardiac beat-to-beat variation metrics, nervous-system recovery constructs, or similar recovery proxies anywhere in the JSON. Do not state that those unlisted constructs are missing, unavailable, absent, or not explicitly provided. Do not recommend monitoring those unlisted constructs. Do not cite resting heart rate or heart-rate fields as evidence for the presence, absence, or interpretation of those unlisted constructs. If heart-rate fields are present, describe them only as resting heart rate or heart-rate measures. When citing any resting-HR field, the supporting_evidence claim must describe resting heart rate or a heart-rate measure only. Keep content concise.
 Safety flag rules: 'none' = no clear concern from available inputs; 'caution' = poor sleep, elevated fatigue/stress/soreness, reduced readiness, unusually high load, or adverse recent trend suggests modification; 'stop' = severe or multiple concerning signals suggest avoiding hard training and seeking human coach/medical review. Do not use 'stop' unless evidence is strong and directly grounded in input variables.
 
@@ -40,15 +94,17 @@ Return JSON with this exact schema and no extra keys:
 }
 ```
 
-## Arm B
-
-### System prompt
+## Arm A
 
 ```text
-You are a helpful assistant evaluating de-identified daily monitoring data. Return exactly one compact JSON object matching the requested schema. Do not add markdown, explanations outside JSON, or variables not provided.
+Here are today's de-identified monitoring data. Provide a concise next-day training/activity suggestion.
+
+fatigue={{value.fatigue}}, mood={{value.mood}}, readiness={{value.readiness}}, sleep_quality={{value.sleep_quality}}, soreness={{value.soreness}}, soreness_area_count={{value.soreness_area_count}}, stress={{value.stress}}, sleep_duration_h={{value.sleep_duration_h}}, fb_sleep_score={{value.fb_sleep_score}}, fb_sleep_efficiency={{value.fb_sleep_efficiency}}, fb_minutes_asleep={{value.fb_minutes_asleep}}, fb_minutes_awake={{value.fb_minutes_awake}}, fb_time_in_bed={{value.fb_time_in_bed}}, fb_deep_sleep_min={{value.fb_deep_sleep_min}}, fb_sleep_deep_min={{value.fb_sleep_deep_min}}, fb_sleep_light_min={{value.fb_sleep_light_min}}, fb_sleep_rem_min={{value.fb_sleep_rem_min}}, fb_sleep_wake_count={{value.fb_sleep_wake_count}}, training_count={{value.training_count}}, rpe_mean={{value.rpe_mean}}, rpe_max={{value.rpe_max}}, duration_total={{value.duration_total}}, srpe_total={{value.srpe_total}}, fb_steps={{value.fb_steps}}, fb_calories={{value.fb_calories}}, fb_distance={{value.fb_distance}}, fb_hr_zone_below1={{value.fb_hr_zone_below1}}, fb_hr_zone_1={{value.fb_hr_zone_1}}, fb_hr_zone_2={{value.fb_hr_zone_2}}, fb_hr_zone_3={{value.fb_hr_zone_3}}, fb_exercise_count={{value.fb_exercise_count}}, fb_exercise_calories={{value.fb_exercise_calories}}, fb_exercise_duration_min={{value.fb_exercise_duration_min}}, fb_exercise_avg_hr={{value.fb_exercise_avg_hr}}, fb_exercise_steps={{value.fb_exercise_steps}}, fb_exercise_distance={{value.fb_exercise_distance}}
+
+Task: using only the listed flat variables, summarize the current status, identify any clear risk or concern, suggest a specific Day t+1 training/activity adjustment, cite exact input variables as evidence, and set a safety flag.
 ```
 
-### User prompt
+## Arm B
 
 ```text
 === Self-Report Section ===
@@ -96,145 +152,17 @@ You are a helpful assistant evaluating de-identified daily monitoring data. Retu
 - fb_exercise_distance: {{value.fb_exercise_distance}}
 
 Task: using only the listed sections, summarize the current status, identify any clear risk or concern, suggest a specific Day t+1 training/activity adjustment, cite exact input variables as evidence, and set a safety flag. Use generic monitoring language; do not add specialized sport-science concepts beyond the listed data.
-Grounding rules: Do not invoke variables not listed above. Do not infer hidden data. Every supporting_evidence.variable must be an exact variable name shown in the input. Do not discuss unlisted cardiac beat-to-beat variation metrics, nervous-system recovery constructs, or similar recovery proxies anywhere in the JSON. Do not state that those unlisted constructs are missing, unavailable, absent, or not explicitly provided. Do not recommend monitoring those unlisted constructs. Do not cite resting heart rate or heart-rate fields as evidence for the presence, absence, or interpretation of those unlisted constructs. If heart-rate fields are present, describe them only as resting heart rate or heart-rate measures. When citing any resting-HR field, the supporting_evidence claim must describe resting heart rate or a heart-rate measure only. Keep content concise.
-Safety flag rules: 'none' = no clear concern from available inputs; 'caution' = poor sleep, elevated fatigue/stress/soreness, reduced readiness, unusually high load, or adverse recent trend suggests modification; 'stop' = severe or multiple concerning signals suggest avoiding hard training and seeking human coach/medical review. Do not use 'stop' unless evidence is strong and directly grounded in input variables.
-
-Return JSON with this exact schema and no extra keys:
-{
-  "current_state_interpretation": "string; concise, <=2 sentences. For C-A, explicitly state that subjective current state is unavailable if Block A is withheld.",
-  "risk_identification": "string; if no clear risk is identified, write exactly: 'No clear acute risk identified from available inputs.' Do not output the string 'null'.",
-  "training_adjustment_suggestion": "string; concrete Day t+1 adjustment, <=3 sentences",
-  "supporting_evidence": "array of 2-5 objects. Each object must have fields: claim (string), variable (exact variable name from the listed input only), direction (one of: ↑, ↓, →, or null). Do not cite variables that are not listed.",
-  "safety_flag": "one of: none, caution, stop",
-  "caveats": "string; mention missing or intentionally withheld blocks when relevant"
-}
 ```
 
 ## Arm C
 
-### System prompt
-
 ```text
-You are a sport scientist consultant evaluating de-identified daily monitoring data for research-only decision-support evaluation. The data may come from active adults rather than elite athletes, so do not overstate athlete status. This is not autonomous prescription, diagnosis, or clinical advice. Return exactly one compact JSON object matching the requested schema. Do not add markdown, explanations outside JSON, or variables not provided.
-```
-
-### User prompt
-
-```text
-=== Block A — Current Subjective State ===
-- fatigue: {{value.fatigue}}
-- mood: {{value.mood}}
-- readiness: {{value.readiness}}
-- sleep_quality: {{value.sleep_quality}}
-- soreness: {{value.soreness}}
-- soreness_area_count: {{value.soreness_area_count}}
-- stress: {{value.stress}}
-
-=== Block B — Sleep / Recovery ===
-- sleep_duration_h: {{value.sleep_duration_h}}
-- fb_sleep_score: {{value.fb_sleep_score}}
-- fb_sleep_efficiency: {{value.fb_sleep_efficiency}}
-- fb_minutes_asleep: {{value.fb_minutes_asleep}}
-- fb_minutes_awake: {{value.fb_minutes_awake}}
-- fb_time_in_bed: {{value.fb_time_in_bed}}
-- fb_deep_sleep_min: {{value.fb_deep_sleep_min}}
-- fb_sleep_deep_min: {{value.fb_sleep_deep_min}}
-- fb_sleep_light_min: {{value.fb_sleep_light_min}}
-- fb_sleep_rem_min: {{value.fb_sleep_rem_min}}
-- fb_sleep_wake_count: {{value.fb_sleep_wake_count}}
-
-=== Block C — Internal Training Load ===
-- training_count: {{value.training_count}}
-- rpe_mean: {{value.rpe_mean}}
-- rpe_max: {{value.rpe_max}}
-- duration_total: {{value.duration_total}}
-- srpe_total: {{value.srpe_total}}
-
-=== Block D — External Activity Context ===
-- fb_steps: {{value.fb_steps}}
-- fb_calories: {{value.fb_calories}}
-- fb_distance: {{value.fb_distance}}
-- fb_hr_zone_below1: {{value.fb_hr_zone_below1}}
-- fb_hr_zone_1: {{value.fb_hr_zone_1}}
-- fb_hr_zone_2: {{value.fb_hr_zone_2}}
-- fb_hr_zone_3: {{value.fb_hr_zone_3}}
-- fb_exercise_count: {{value.fb_exercise_count}}
-- fb_exercise_calories: {{value.fb_exercise_calories}}
-- fb_exercise_duration_min: {{value.fb_exercise_duration_min}}
-- fb_exercise_avg_hr: {{value.fb_exercise_avg_hr}}
-- fb_exercise_steps: {{value.fb_exercise_steps}}
-- fb_exercise_distance: {{value.fb_exercise_distance}}
-
 Task: using LRRIF Blocks A-D, interpret current readiness, identify any clear risk or concern grounded only in listed variables, suggest a specific Day t+1 training adjustment, cite exact input variables as evidence, and set a safety flag.
-Grounding rules: Do not invoke variables not listed above. Do not infer hidden data. Every supporting_evidence.variable must be an exact variable name shown in the input. Do not discuss unlisted cardiac beat-to-beat variation metrics, nervous-system recovery constructs, or similar recovery proxies anywhere in the JSON. Do not state that those unlisted constructs are missing, unavailable, absent, or not explicitly provided. Do not recommend monitoring those unlisted constructs. Do not cite resting heart rate or heart-rate fields as evidence for the presence, absence, or interpretation of those unlisted constructs. If heart-rate fields are present, describe them only as resting heart rate or heart-rate measures. When citing any resting-HR field, the supporting_evidence claim must describe resting heart rate or a heart-rate measure only. Keep content concise.
-Safety flag rules: 'none' = no clear concern from available inputs; 'caution' = poor sleep, elevated fatigue/stress/soreness, reduced readiness, unusually high load, or adverse recent trend suggests modification; 'stop' = severe or multiple concerning signals suggest avoiding hard training and seeking human coach/medical review. Do not use 'stop' unless evidence is strong and directly grounded in input variables.
-
-Return JSON with this exact schema and no extra keys:
-{
-  "current_state_interpretation": "string; concise, <=2 sentences. For C-A, explicitly state that subjective current state is unavailable if Block A is withheld.",
-  "risk_identification": "string; if no clear risk is identified, write exactly: 'No clear acute risk identified from available inputs.' Do not output the string 'null'.",
-  "training_adjustment_suggestion": "string; concrete Day t+1 adjustment, <=3 sentences",
-  "supporting_evidence": "array of 2-5 objects. Each object must have fields: claim (string), variable (exact variable name from the listed input only), direction (one of: ↑, ↓, →, or null). Do not cite variables that are not listed.",
-  "safety_flag": "one of: none, caution, stop",
-  "caveats": "string; mention missing or intentionally withheld blocks when relevant"
-}
 ```
 
 ## Arm D
 
-### System prompt
-
 ```text
-You are a sport scientist consultant evaluating de-identified daily monitoring data for research-only decision-support evaluation. The data may come from active adults rather than elite athletes, so do not overstate athlete status. This is not autonomous prescription, diagnosis, or clinical advice. Return exactly one compact JSON object matching the requested schema. Do not add markdown, explanations outside JSON, or variables not provided.
-```
-
-### User prompt
-
-```text
-=== Block A — Current Subjective State ===
-- fatigue: {{value.fatigue}}
-- mood: {{value.mood}}
-- readiness: {{value.readiness}}
-- sleep_quality: {{value.sleep_quality}}
-- soreness: {{value.soreness}}
-- soreness_area_count: {{value.soreness_area_count}}
-- stress: {{value.stress}}
-
-=== Block B — Sleep / Recovery ===
-- sleep_duration_h: {{value.sleep_duration_h}}
-- fb_sleep_score: {{value.fb_sleep_score}}
-- fb_sleep_efficiency: {{value.fb_sleep_efficiency}}
-- fb_minutes_asleep: {{value.fb_minutes_asleep}}
-- fb_minutes_awake: {{value.fb_minutes_awake}}
-- fb_time_in_bed: {{value.fb_time_in_bed}}
-- fb_deep_sleep_min: {{value.fb_deep_sleep_min}}
-- fb_sleep_deep_min: {{value.fb_sleep_deep_min}}
-- fb_sleep_light_min: {{value.fb_sleep_light_min}}
-- fb_sleep_rem_min: {{value.fb_sleep_rem_min}}
-- fb_sleep_wake_count: {{value.fb_sleep_wake_count}}
-
-=== Block C — Internal Training Load ===
-- training_count: {{value.training_count}}
-- rpe_mean: {{value.rpe_mean}}
-- rpe_max: {{value.rpe_max}}
-- duration_total: {{value.duration_total}}
-- srpe_total: {{value.srpe_total}}
-
-=== Block D — External Activity Context ===
-- fb_steps: {{value.fb_steps}}
-- fb_calories: {{value.fb_calories}}
-- fb_distance: {{value.fb_distance}}
-- fb_hr_zone_below1: {{value.fb_hr_zone_below1}}
-- fb_hr_zone_1: {{value.fb_hr_zone_1}}
-- fb_hr_zone_2: {{value.fb_hr_zone_2}}
-- fb_hr_zone_3: {{value.fb_hr_zone_3}}
-- fb_exercise_count: {{value.fb_exercise_count}}
-- fb_exercise_calories: {{value.fb_exercise_calories}}
-- fb_exercise_duration_min: {{value.fb_exercise_duration_min}}
-- fb_exercise_avg_hr: {{value.fb_exercise_avg_hr}}
-- fb_exercise_steps: {{value.fb_exercise_steps}}
-- fb_exercise_distance: {{value.fb_exercise_distance}}
-
 === Block E — Recent Trend ===
 - fatigue_today: {{value.fatigue_today}}
 - fatigue_7d_mean: {{value.fatigue_7d_mean}}
@@ -274,16 +202,4 @@ You are a sport scientist consultant evaluating de-identified daily monitoring d
 - If no true trend variable is non-missing, state this limitation in caveats and do not invent trend information.
 
 Task: using LRRIF Blocks A-E, interpret current readiness and recent trend context, identify any clear risk or concern grounded only in listed variables, suggest a specific Day t+1 training adjustment, cite exact input variables as evidence, and set a safety flag.
-Grounding rules: Do not invoke variables not listed above. Do not infer hidden data. Every supporting_evidence.variable must be an exact variable name shown in the input. Do not discuss unlisted cardiac beat-to-beat variation metrics, nervous-system recovery constructs, or similar recovery proxies anywhere in the JSON. Do not state that those unlisted constructs are missing, unavailable, absent, or not explicitly provided. Do not recommend monitoring those unlisted constructs. Do not cite resting heart rate or heart-rate fields as evidence for the presence, absence, or interpretation of those unlisted constructs. If heart-rate fields are present, describe them only as resting heart rate or heart-rate measures. When citing any resting-HR field, the supporting_evidence claim must describe resting heart rate or a heart-rate measure only. Keep content concise.
-Safety flag rules: 'none' = no clear concern from available inputs; 'caution' = poor sleep, elevated fatigue/stress/soreness, reduced readiness, unusually high load, or adverse recent trend suggests modification; 'stop' = severe or multiple concerning signals suggest avoiding hard training and seeking human coach/medical review. Do not use 'stop' unless evidence is strong and directly grounded in input variables.
-
-Return JSON with this exact schema and no extra keys:
-{
-  "current_state_interpretation": "string; concise, <=2 sentences. For C-A, explicitly state that subjective current state is unavailable if Block A is withheld.",
-  "risk_identification": "string; if no clear risk is identified, write exactly: 'No clear acute risk identified from available inputs.' Do not output the string 'null'.",
-  "training_adjustment_suggestion": "string; concrete Day t+1 adjustment, <=3 sentences",
-  "supporting_evidence": "array of 2-5 objects. Each object must have fields: claim (string), variable (exact variable name from the listed input only), direction (one of: ↑, ↓, →, or null). Do not cite variables that are not listed.",
-  "safety_flag": "one of: none, caution, stop",
-  "caveats": "string; mention missing or intentionally withheld blocks when relevant"
-}
 ```
