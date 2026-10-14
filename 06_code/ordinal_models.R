@@ -596,113 +596,299 @@ run_primary_models <- function(dat, output_dir, primary_model_dir = NULL) {
   invisible(dplyr::bind_rows(fit_rows))
 }
 
-run_interaction_screen <- function(dat, output_dir) {
-  out_dir <- output_dir
-  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  model_levels <- c(
-    "siliconflow_primary",
-    "openrouter_gpt_oss_20b_free",
-    "siliconflow_deepseek_v4_flash_paid",
-    "siliconflow_minimax_m2_5_paid"
-  )
-  arm_levels <- c("A", "B", "C", "D")
-  dimensions <- paste0("D", 1:8)
-
-  extract_fixed <- function(fit, dimension, fitted_model) {
-    coef_table <- as.data.frame(coef(summary(fit)))
-    coef_table$term <- rownames(coef_table)
-    rownames(coef_table) <- NULL
-    names(coef_table) <- make.names(names(coef_table))
-    as_tibble(coef_table) %>%
-      filter(grepl("^model_key|^arm", term)) %>%
-      transmute(
-        dimension = dimension,
-        fitted_model = fitted_model,
-        term = term,
-        estimate_log_odds = Estimate,
-        std_error = Std..Error,
-        z_value = z.value,
-        p_value = Pr...z..,
-        odds_ratio = exp(Estimate)
-      )
+# Fit only the additive member of the primary CLMM comparison. This helper
+# follows the additive phase of lrrif_fit_primary_dimension, including D2's
+# numerical initialization and temporary logit-curvature identity.
+lrrif_fit_additive_dimension <- function(d, dimension) {
+  if (!requireNamespace("ordinal", quietly = TRUE)) stop("Package ordinal is required.")
+  if (!dimension %in% paste0("D", 1:8)) stop("Unknown score dimension.")
+  needed <- c("score_ord", "model_key", "arm", "rater_id", "case_id", "output_id")
+  if (!all(needed %in% names(d)) || anyNA(d[needed])) stop("Incomplete model data.")
+  old_options <- options(contrasts = c("contr.treatment", "contr.poly"))
+  on.exit(options(old_options), add = TRUE)
+  d <- as.data.frame(d)
+  d$score_ord <- ordered(as.character(d$score_ord), levels = as.character(1:5))
+  d$model_key <- factor(d$model_key, levels = c("siliconflow_primary",
+    "openrouter_gpt_oss_20b_free", "siliconflow_deepseek_v4_flash_paid",
+    "siliconflow_minimax_m2_5_paid"))
+  d$arm <- factor(d$arm, levels = c("A", "B", "C", "D"))
+  d$rater_id <- factor(d$rater_id, levels = paste0("rater_0", 1:3))
+  d$case_id <- factor(d$case_id)
+  d$output_id <- factor(d$output_id)
+  if (anyNA(d[needed]) || any(table(d$model_key) == 0L) ||
+      any(table(d$arm) == 0L) || any(table(d$rater_id) == 0L)) {
+    stop("Unexpected scores, endpoint/arm/rater levels, or missing factor levels.")
   }
-
-  dat <- dat %>%
-    mutate(
-      score_ord = ordered(score, levels = 1:5),
-      model_key = factor(model_key, levels = model_levels),
-      arm = factor(arm, levels = arm_levels)
-    )
-
-  status_rows <- list()
-  fixed_rows <- list()
-  emm_rows <- list()
-
-  for (dimension_name in dimensions) {
-    d <- dat %>% filter(dimension == dimension_name)
-    additive <- tryCatch(clm(score_ord ~ model_key + arm, data = d, link = "logit", Hess = TRUE), error = function(e) e)
-    interaction <- tryCatch(clm(score_ord ~ model_key * arm, data = d, link = "logit", Hess = TRUE), error = function(e) e)
-    if (!inherits(additive, "error") && !inherits(interaction, "error")) {
-      lrt <- as.data.frame(anova(additive, interaction))
-      p_lrt <- if ("Pr(>Chisq)" %in% names(lrt)) lrt[2, "Pr(>Chisq)"] else NA_real_
-      lr_stat <- if ("LR.stat" %in% names(lrt)) lrt[2, "LR.stat"] else NA_real_
-      df_diff <- if ("df" %in% names(lrt)) lrt[2, "df"] else NA_real_
-      status_rows[[dimension_name]] <- tibble(
-        dimension = dimension_name,
-        status = "fit_ok",
-        fitted_model = "fixed_effect_clm",
-        n_observations = nrow(d),
-        additive_AIC = AIC(additive),
-        interaction_AIC = AIC(interaction),
-        LR_stat = lr_stat,
-        df_diff = df_diff,
-        p_value = p_lrt,
-        message = ""
-      )
-      fixed_rows[[dimension_name]] <- extract_fixed(interaction, dimension_name, "fixed_effect_clm_interaction")
-      emm <- tryCatch(
-        as.data.frame(emmeans(interaction, specs = ~ model_key | arm, mode = "latent")),
-        error = function(e) NULL
-      )
-      if (!is.null(emm)) {
-        emm_rows[[dimension_name]] <- as_tibble(emm) %>%
-          mutate(dimension = dimension_name, fitted_model = "fixed_effect_clm_interaction") %>%
-          relocate(dimension, fitted_model)
+  attempts <- list()
+  run_fit <- function(stage, formula, control, start = NULL, stable = FALSE) {
+    started <- proc.time()[["elapsed"]]
+    call_fit <- function() {
+      if (is.null(start)) {
+        ordinal::clmm(formula, data = d, link = "logit", threshold = "flexible",
+          Hess = TRUE, nAGQ = 1, control = control)
+      } else {
+        ordinal::clmm(formula, data = d, link = "logit", threshold = "flexible",
+          Hess = TRUE, nAGQ = 1, control = control, start = start)
       }
-    } else {
-      status_rows[[dimension_name]] <- tibble(
-        dimension = dimension_name,
-        status = "fit_failed",
-        fitted_model = "fixed_effect_clm",
-        n_observations = nrow(d),
-        additive_AIC = NA_real_,
-        interaction_AIC = NA_real_,
-        LR_stat = NA_real_,
-        df_diff = NA_real_,
-        p_value = NA_real_,
-        message = paste(
-          if (inherits(additive, "error")) additive$message else "",
-          if (inherits(interaction, "error")) interaction$message else "",
-          sep = " | "
-        )
-      )
+    }
+    result <- lrrif_capture_conditions(if (stable)
+      lrrif_with_stable_logit_curvature(call_fit()) else call_fit())
+    attempts[[length(attempts) + 1L]] <<- list(stage = stage, control = control,
+      start = start, stable_logit_curvature = stable,
+      elapsed_seconds = proc.time()[["elapsed"]] - started,
+      warnings = result$warnings, messages = result$messages, error = result$error,
+      optimizer_code = if (is.null(result$value)) NA_integer_ else
+        result$value$optRes$convergence)
+    result$value
+  }
+  additive_formula <- lrrif_additive_formula()
+  control <- lrrif_primary_control(dimension)
+  if (identical(dimension, "D2")) {
+    case_fit <- run_fit("case_only_D2_initialization",
+      score_ord ~ model_key + arm + rater_id + (1 | case_id),
+      ordinal::clmm.control(maxIter = 200, gradTol = 1e-4))
+    if (!lrrif_clmm_eligible(case_fit)) {
+      return(list(fit = NULL, attempts = attempts,
+        message = "D2 case-only initialization fit failed diagnostics."))
+    }
+    group_order <- names(sort(c(output_id = nlevels(d$output_id),
+      case_id = nlevels(d$case_id)), decreasing = TRUE))
+    random_start <- c(output_id = 0.5,
+      case_id = as.numeric(case_fit$ST$case_id[1L, 1L]))
+    additive_start <- list(c(case_fit$alpha, case_fit$beta),
+      unname(random_start[group_order]))
+    started <- proc.time()[["elapsed"]]
+    initial <- lrrif_capture_conditions({
+      initial_rho <- ordinal::clmm(additive_formula, data = d, link = "logit",
+        threshold = "flexible", Hess = TRUE, nAGQ = 1, control = control,
+        start = additive_start, doFit = FALSE)
+      if (!identical(names(initial_rho$dims$nlev.re), group_order)) {
+        stop("D2 initialization random SD order differs from ordinal internal ordering.")
+      }
+      TRUE
+    })
+    attempts[[length(attempts) + 1L]] <- list(stage = "D2_additive_start_order_check",
+      control = control, start = additive_start, stable_logit_curvature = FALSE,
+      elapsed_seconds = proc.time()[["elapsed"]] - started,
+      warnings = initial$warnings, messages = initial$messages, error = initial$error,
+      optimizer_code = NA_integer_)
+    if (nzchar(initial$error)) {
+      return(list(fit = NULL, attempts = attempts, message = initial$error))
+    }
+    fit <- run_fit("additive_D2_stable_curvature", additive_formula,
+      control, start = additive_start, stable = TRUE)
+  } else {
+    fit <- run_fit("additive_initialization", additive_formula, control)
+  }
+  eligible <- lrrif_clmm_eligible(fit)
+  if (eligible) {
+    stopifnot(length(fit$beta) == 8L,
+      !any(grepl(":", names(fit$beta), fixed = TRUE)),
+      setequal(names(fit$ST), c("case_id", "output_id")))
+  }
+  list(fit = if (eligible) fit else NULL, attempts = attempts,
+    message = if (eligible) "" else
+      "Additive CLMM fit failed diagnostics; inspect numerical attempts.")
+}
+
+prepare_interaction_data <- function(dat) {
+  dat <- as.data.frame(dat)
+  dat$score_ord <- ordered(dat$score, levels = 1:5)
+  dat$model_key <- factor(dat$model_key, levels = c("siliconflow_primary",
+    "openrouter_gpt_oss_20b_free", "siliconflow_deepseek_v4_flash_paid",
+    "siliconflow_minimax_m2_5_paid"))
+  dat$arm <- factor(dat$arm, levels = c("A", "B", "C", "D"))
+  dat$rater_id <- factor(dat$rater_id, levels = paste0("rater_0", 1:3))
+  dat$case_id <- factor(dat$case_id)
+  dat$output_id <- factor(dat$output_id)
+  if (anyNA(dat[c("score_ord", "model_key", "arm", "rater_id", "case_id", "output_id")])) {
+    stop("Incomplete interaction comparison data after factor coding.")
+  }
+  dat
+}
+
+validate_interaction_pair <- function(additive, interaction, d) {
+  validate_primary_fit(interaction, d)
+  formula_text <- function(x) gsub("[[:space:]]", "", paste(deparse(x), collapse = ""))
+  expected_contrasts <- stats::setNames(rep(list("contr.treatment"), 3L),
+                                       c("model_key", "arm", "rater_id"))
+  specifications <- list(
+    additive = list(fit = additive, formula = lrrif_additive_formula(),
+                    design = ~ model_key + arm + rater_id, beta_count = 8L),
+    interaction = list(fit = interaction, formula = lrrif_primary_formula(),
+                       design = ~ model_key * arm + rater_id, beta_count = 17L)
+  )
+  for (name in names(specifications)) {
+    specification <- specifications[[name]]
+    fit <- specification$fit
+    if (!lrrif_clmm_eligible(fit) ||
+        !identical(formula_text(fit$formula), formula_text(specification$formula)) ||
+        !identical(fit$link, "logit") || !identical(fit$threshold, "flexible") ||
+        fit$nAGQ != 1L || nrow(fit$model) != 4800L ||
+        !setequal(names(fit$ST), c("case_id", "output_id")) ||
+        length(fit$beta) != specification$beta_count ||
+        !identical(fit$contrasts, expected_contrasts)) {
+      stop("Invalid ", name, " CLMM structure, coding or numerical diagnostics.")
+    }
+    expected_beta <- colnames(stats::model.matrix(specification$design, data = d))[-1L]
+    if (!identical(names(fit$beta), expected_beta)) {
+      stop("The ", name, " CLMM fixed-effect coding differs from the rating design.")
+    }
+    for (column in c("score_ord", "model_key", "arm", "rater_id", "case_id", "output_id")) {
+      if (!identical(as.character(fit$model[[column]]), as.character(d[[column]]))) {
+        stop("The ", name, " CLMM/input rows differ in ", column, ".")
+      }
+      # ordinal drops unused response categories; compare the fitted response
+      # to observed input levels rather than requiring all five categories.
+      expected_levels <- if (column == "score_ord") levels(droplevels(d[[column]])) else levels(d[[column]])
+      if (!identical(levels(fit$model[[column]]), expected_levels)) {
+        stop("The ", name, " CLMM/input levels differ in ", column, ".")
+      }
+    }
+    for (group in c("case_id", "output_id")) {
+      if (!identical(dim(fit$ST[[group]]), c(1L, 1L))) {
+        stop("Comparison requires case and output random intercepts only.")
+      }
     }
   }
+  if (!identical(names(additive$alpha), names(interaction$alpha)) ||
+      !identical(additive$y.levels, interaction$y.levels) ||
+      !all(names(additive$beta) %in% names(interaction$beta)) ||
+      sum(grepl(":", names(interaction$beta), fixed = TRUE)) != 9L) {
+    stop("CLMM pair is not the required nested comparison with nine added interactions.")
+  }
+  invisible(TRUE)
+}
 
-  status <- bind_rows(status_rows) %>%
-    mutate(p_holm = p.adjust(p_value, method = "holm"))
-  fixed <- bind_rows(fixed_rows)
-  emm <- bind_rows(emm_rows)
+clmm_interaction_lrt <- function(additive, interaction, d, dimension, input_mode, message = "") {
+  validate_interaction_pair(additive, interaction, d)
+  ll_add <- logLik(additive)
+  ll_full <- logLik(interaction)
+  df_diff <- attr(ll_full, "df") - attr(ll_add, "df")
+  LR_stat <- 2 * (as.numeric(ll_full) - as.numeric(ll_add))
+  if (length(df_diff) != 1L || !is.finite(df_diff) || df_diff != 9L ||
+      !is.finite(as.numeric(ll_add)) || !is.finite(as.numeric(ll_full)) ||
+      !is.finite(LR_stat) || LR_stat < 0) {
+    stop("Invalid CLMM likelihood ratio or parameter difference; no value was clamped.")
+  }
+  p_raw <- pchisq(LR_stat, df = df_diff, lower.tail = FALSE)
+  tibble::tibble(
+    dimension = dimension, status = "fit_ok",
+    fitted_model = "fixed_rater_case_output_clmm_comparison",
+    n_observations = nrow(d), additive_AIC = AIC(additive),
+    interaction_AIC = AIC(interaction), LR_stat = LR_stat,
+    df_diff = as.integer(df_diff), p_value = p_raw, p_raw = p_raw,
+    p_holm = NA_real_, delta_AIC = AIC(interaction) - AIC(additive),
+    additive_logLik = as.numeric(ll_add), interaction_logLik = as.numeric(ll_full),
+    additive_df = attr(ll_add, "df"), interaction_df = attr(ll_full, "df"),
+    n_cases = length(unique(d$case_id)), n_outputs = length(unique(d$output_id)),
+    n_raters = length(unique(d$rater_id)), input_mode = input_mode,
+    additive_optimizer_code = additive$optRes$convergence,
+    interaction_optimizer_code = interaction$optRes$convergence,
+    additive_formula = paste(deparse(additive$formula, width.cutoff = 500L), collapse = " "),
+    interaction_formula = paste(deparse(interaction$formula, width.cutoff = 500L), collapse = " "),
+    reference_distribution = "asymptotic_chisquare_9df",
+    family_size = 8L, p_adjustment = "Holm_across_eight_dimension_interaction_tests",
+    message = message
+  )
+}
 
-  write_csv(status, file.path(out_dir, "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_SCREEN.csv"))
-  write_csv(fixed, file.path(out_dir, "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_FIXED_EFFECTS.csv"))
-  write_csv(emm, file.path(out_dir, "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_EMMEANS.csv"))
-  capture.output(sessionInfo(), file = file.path(out_dir, "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_SCREEN_R_SESSION_INFO.txt"))
+run_interaction_screen <- function(dat, output_dir, primary_model_dir = NULL,
+                                   additive_model_dir = NULL) {
+  if (is.null(primary_model_dir) && !is.null(additive_model_dir)) {
+    stop("An additive saved-model directory requires a paired primary saved-model directory.")
+  }
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  model_dir <- file.path(output_dir, "model_objects")
+  dir.create(model_dir, showWarnings = FALSE)
+  old_options <- options(contrasts = c("contr.treatment", "contr.poly"))
+  on.exit(options(old_options), add = TRUE)
+  dat <- prepare_interaction_data(dat)
+  model_labels <- c(siliconflow_primary = "Qwen3-8B baseline",
+    openrouter_gpt_oss_20b_free = "GPT-OSS-20B",
+    siliconflow_deepseek_v4_flash_paid = "DeepSeek-V4-Flash",
+    siliconflow_minimax_m2_5_paid = "MiniMax-M2.5")
+  status_rows <- fixed_rows <- emm_rows <- list()
+  for (dimension in paste0("D", 1:8)) {
+    d <- dat[dat$dimension == dimension, , drop = FALSE]
+    cat("CLMM interaction comparison: ", dimension, "\n", sep = "")
+    flush.console()
+    result <- tryCatch({
+      if (is.null(primary_model_dir)) {
+        fitted <- lrrif_fit_primary_dimension(d, dimension)
+        saveRDS(fitted$attempts, file.path(model_dir, paste0(dimension, "_numerical_attempts.rds")))
+        if (is.null(fitted$fit) || is.null(fitted$additive_fit)) stop(fitted$message)
+        interaction <- fitted$fit
+        additive <- fitted$additive_fit
+        input_mode <- "paired_fits_from_ratings"
+        message <- paste(unique(unlist(lapply(fitted$attempts, `[[`, "warnings"))), collapse = " | ")
+      } else {
+        full_path <- file.path(primary_model_dir, paste0(dimension, "_interaction_clmm_fit.rds"))
+        interaction <- readRDS(full_path)
+        validate_primary_fit(interaction, d)
+        additive_dir <- if (is.null(additive_model_dir)) primary_model_dir else additive_model_dir
+        additive_path <- file.path(additive_dir, paste0(dimension, "_additive_clmm_fit.rds"))
+        if (file.exists(additive_path)) {
+          additive <- readRDS(additive_path)
+          input_mode <- "verified_saved_clmm_pair"
+          message <- "Both saved CLMMs verified against every supplied rating row; no refit."
+        } else if (!is.null(additive_model_dir)) {
+          stop("Explicit additive model is missing: ", additive_path)
+        } else {
+          # A primary-only cache does not contain the null model. Compute only
+          # the missing additive member using the same initialization/controls.
+          fitted <- lrrif_fit_additive_dimension(d, dimension)
+          saveRDS(fitted$attempts, file.path(model_dir, paste0(dimension, "_additive_numerical_attempts.rds")))
+          if (is.null(fitted$fit)) stop(fitted$message)
+          additive <- fitted$fit
+          input_mode <- "verified_primary_and_additive_fit_from_ratings"
+          message <- paste(unique(unlist(lapply(fitted$attempts, `[[`, "warnings"))), collapse = " | ")
+        }
+      }
+      status <- clmm_interaction_lrt(additive, interaction, d, dimension, input_mode, message)
+      saveRDS(additive, file.path(model_dir, paste0(dimension, "_additive_clmm_fit.rds")))
+      saveRDS(interaction, file.path(model_dir, paste0(dimension, "_interaction_clmm_fit.rds")))
+      fixed <- primary_fixed_effects(interaction, dimension,
+                                     "full_interaction_fixed_rater_case_output")
+      reference_grid <- emmeans::ref_grid(interaction, mode = "latent")
+      emm <- primary_cell_emmeans(reference_grid, dimension,
+                                  "full_interaction_fixed_rater_case_output", model_labels)
+      list(status = status, fixed = fixed, emmeans = emm)
+    }, error = function(e) e)
+    if (inherits(result, "error")) {
+      status_rows[[dimension]] <- tibble::tibble(
+        dimension = dimension, status = "comparison_or_postprocessing_failed",
+        fitted_model = "fixed_rater_case_output_clmm_comparison",
+        n_observations = nrow(d), additive_AIC = NA_real_, interaction_AIC = NA_real_,
+        LR_stat = NA_real_, df_diff = NA_integer_, p_value = NA_real_,
+        p_raw = NA_real_, p_holm = NA_real_, delta_AIC = NA_real_,
+        family_size = 8L, message = conditionMessage(result)
+      )
+    } else {
+      status_rows[[dimension]] <- result$status
+      fixed_rows[[dimension]] <- result$fixed
+      emm_rows[[dimension]] <- result$emmeans
+    }
+    readr::write_csv(dplyr::bind_rows(status_rows),
+                    file.path(output_dir, "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_SCREEN.csv"))
+  }
+  status <- dplyr::bind_rows(status_rows)
+  complete <- nrow(status) == 8L && all(status$status == "fit_ok") && all(is.finite(status$p_raw))
+  status$family_complete <- complete
+  if (complete) status$p_holm <- p.adjust(status$p_raw, method = "holm", n = 8L)
+  # A failed dimension leaves the entire eight-test adjusted family unavailable.
+  readr::write_csv(status, file.path(output_dir, "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_SCREEN.csv"))
+  readr::write_csv(dplyr::bind_rows(fixed_rows),
+                  file.path(output_dir, "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_FIXED_EFFECTS.csv"))
+  readr::write_csv(dplyr::bind_rows(emm_rows),
+                  file.path(output_dir, "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_EMMEANS.csv"))
+  capture.output(sessionInfo(), file = file.path(output_dir,
+                    "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_SCREEN_R_SESSION_INFO.txt"))
   invisible(status)
 }
 
 print_usage <- function() {
-  cat("Usage: Rscript ordinal_models.R --ratings CSV --output-dir DIR [--mode primary|interaction|all] [--primary-model-dir DIR]\n")
+  cat("Usage: Rscript ordinal_models.R --ratings CSV --output-dir DIR [--mode primary|interaction|all] [--primary-model-dir DIR] [--additive-model-dir DIR]\n")
 }
 
 main <- function(args = commandArgs(trailingOnly = TRUE)) {
@@ -712,7 +898,7 @@ main <- function(args = commandArgs(trailingOnly = TRUE)) {
   }
   options <- list(mode = "all")
   seen <- character()
-  allowed <- c("--ratings", "--output-dir", "--mode", "--primary-model-dir")
+  allowed <- c("--ratings", "--output-dir", "--mode", "--primary-model-dir", "--additive-model-dir")
   k <- 1L
   while (k <= length(args)) {
     flag <- args[[k]]
@@ -732,6 +918,8 @@ main <- function(args = commandArgs(trailingOnly = TRUE)) {
   output_dir <- normalizePath(output_dir, mustWork = TRUE)
   primary_model_dir <- if (is.null(options[["primary-model-dir"]])) NULL else
     normalizePath(path.expand(options[["primary-model-dir"]]), mustWork = TRUE)
+  additive_model_dir <- if (is.null(options[["additive-model-dir"]])) NULL else
+    normalizePath(path.expand(options[["additive-model-dir"]]), mustWork = TRUE)
   load_ordinal_packages()
   dat <- read_ratings(ratings_path)
   primary_status <- NULL
@@ -740,7 +928,15 @@ main <- function(args = commandArgs(trailingOnly = TRUE)) {
     primary_status <- run_primary_models(dat, file.path(output_dir, "primary"), primary_model_dir)
   }
   if (options$mode %in% c("interaction", "all")) {
-    interaction_status <- run_interaction_screen(dat, file.path(output_dir, "interaction"))
+    if (!is.null(primary_status) && any(primary_status$status != "fit_ok")) {
+      stop("Primary analysis failed; interaction comparisons were not run from incomplete model outputs.")
+    }
+    # Retain an explicitly supplied source cache, including any additive
+    # members it contains. Fresh all-mode fits are cached by run_primary_models.
+    paired_primary_dir <- if (options$mode == "all" && is.null(primary_model_dir))
+      file.path(output_dir, "primary", "model_objects") else primary_model_dir
+    interaction_status <- run_interaction_screen(dat, file.path(output_dir, "interaction"),
+      primary_model_dir = paired_primary_dir, additive_model_dir = additive_model_dir)
   }
   failed <- (!is.null(primary_status) && any(primary_status$status != "fit_ok")) ||
             (!is.null(interaction_status) && any(interaction_status$status != "fit_ok"))
