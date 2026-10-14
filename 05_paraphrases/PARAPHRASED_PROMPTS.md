@@ -28,6 +28,6 @@ These are three shared replacement texts, not 120 independently written paraphra
 
 ## Scope of the manipulation
 
-The replacement removes the original arm-specific Task wording. In particular, Arm B's sentence `Use generic monitoring language; do not add specialized sport-science concepts beyond the listed data.` was inside the replaced span and is absent from all three variants. These are the prompts actually used; retaining other prompt sections does not establish strict semantic equivalence of every original Task constraint.
+The replacement removes the original arm-specific Task wording. These are the prompts actually used; retaining other prompt sections does not establish strict semantic equivalence of every original Task constraint.
 
 Only the three code blocks above are replacement prompt content. The surrounding text explains their historical use. Fully instantiated prompts additionally require the case-specific values and, for Arm D, the saved availability-list string.
