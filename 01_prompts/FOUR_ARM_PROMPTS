@@ -1,20 +1,5 @@
 # Four-arm prompt templates
 
-Templates extracted from 400 saved primary prompts (100 cases × four arms). All original instructions and wording are retained. `{{value.VARIABLE_NAME}}` represents the original displayed value, including `missing`; `{{arm_d_available_trends}}` represents the original case-specific availability list.
-
-The Arm D availability list contained at most the first 15 qualifying trend variables, or `none non-missing`. In 21/100 cases, it included a variable displayed as `missing`. Exact case reconstruction requires the original displayed values and historical list strings; the placeholders alone do not supply them.
-
-## Assembly
-
-Shared blocks are stored once. Headings and assembly instructions are not model input. Join user blocks with two newline characters, then append **Shared rules and output schema** with one newline.
-
-| Arm | System prompt | User prompt blocks, in order |
-| --- | --- | --- |
-| A | System A/B | Arm A |
-| B | System A/B | Arm B |
-| C | System C/D | Current input C/D → Arm C |
-| D | System C/D | Current input C/D → Arm D |
-
 ## Shared blocks
 
 ### System A/B

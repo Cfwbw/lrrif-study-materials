@@ -22,7 +22,7 @@ Task: Using only this prompt's visible data, write the required JSON with curren
 
 ## How each complete prompt was formed
 
-Start with the corresponding arm's original prompt in [FOUR_ARM_PROMPTS.md](../01_prompts/FOUR_ARM_PROMPTS.md), using the same case-specific input values. Replace the entire first span beginning with `Task: ` and ending immediately before the newline preceding `Grounding rules:` with one of the exact texts above. The system prompt and all user-prompt text outside this span remain unchanged, including the displayed input data, grounding rules, safety-flag rules, JSON instructions, and Arm D trend requirements.
+Start with the corresponding arm's original prompt in [FOUR_ARM_PROMPTS](../01_prompts/FOUR_ARM_PROMPTS), using the same case-specific input values. Replace the entire first span beginning with `Task: ` and ending immediately before the newline preceding `Grounding rules:` with one of the exact texts above. The system prompt and all user-prompt text outside this span remain unchanged, including the displayed input data, grounding rules, safety-flag rules, JSON instructions, and Arm D trend requirements.
 
 These are three shared replacement texts, not 120 independently written paraphrases. The same replacement was applied to Arms A, B, C, and D.
 
