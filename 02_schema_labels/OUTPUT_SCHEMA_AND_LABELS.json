@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Model-output JSON schema and safety/decision-caution label definitions",
-  "description": "The six-field JSON output contract stated in the experimental prompts. This schema documents the historical requirements; it is not a claim that all requirements were implemented by the runtime validator or satisfied by all saved outputs.",
+  "description": "The prespecified six-field JSON response schema and safety/decision-caution label definitions. Technical validity requires successful JSON parsing and conformity with all machine-checkable structural constraints in the response schema.",
   "type": "object",
   "required": [
     "current_state_interpretation",
@@ -77,7 +77,7 @@
       "description": "Missing or intentionally withheld information when relevant."
     }
   },
-  "$comment": "Machine-readable documentation assembled from the historical prompt text and validation/analysis code on 2026-09-28. It is not a pre-existing schema artifact or a preregistration record. The derived decision-caution label is documented under $defs and x-derived-label and is not a seventh model-generated field. Sentence limits, exact input-variable visibility and semantic appropriateness require separate checks.",
+  "$comment": "The derived decision-caution label is documented under $defs and x-derived-label and is not a seventh model-generated field. Sentence limits, exact input-variable visibility and semantic appropriateness require separate checks.",
   "$defs": {
     "decision_caution_label": {
       "type": "string",
@@ -90,7 +90,7 @@
       ],
       "description": "Derived analysis label named decision_bucket in the analysis code; obtained by lexical rules applied after generation, not emitted as an additional field by the model."
     },
-    "historical_runtime_acceptance": {
+    "runtime_acceptance": {
       "type": "object",
       "required": [
         "current_state_interpretation",
@@ -102,20 +102,69 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "current_state_interpretation": {},
-        "risk_identification": {},
-        "training_adjustment_suggestion": {},
+        "current_state_interpretation": {
+          "type": "string",
+          "description": "Concise interpretation of current state, at most two sentences."
+        },
+        "risk_identification": {
+          "type": "string",
+          "description": "Risk or concern; when no clear risk: 'No clear acute risk identified from available inputs.' Not the string 'null'."
+        },
+        "training_adjustment_suggestion": {
+          "type": "string",
+          "description": "Concrete Day t+1 training/activity adjustment, at most three sentences."
+        },
         "supporting_evidence": {
-          "type": "array"
+          "type": "array",
+          "description": "Two to five evidence objects; exact input-variable names.",
+          "minItems": 2,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "variable",
+              "direction"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string",
+                "description": "Claim supported by the selected variable."
+              },
+              "variable": {
+                "type": "string",
+                "description": "Exact visible input variable name."
+              },
+              "direction": {
+                "enum": [
+                  "↑",
+                  "↓",
+                  "→",
+                  null
+                ],
+                "description": "One of ↑, ↓, →, or JSON null."
+              }
+            }
+          }
         },
         "safety_flag": {
+          "type": "string",
+          "description": "Model-produced safety flag: none, caution, or stop.",
           "enum": [
             "none",
             "caution",
             "stop"
-          ]
+          ],
+          "x-label-definitions": {
+            "none": "No clear concern from available inputs.",
+            "caution": "Poor sleep, elevated fatigue/stress/soreness, reduced readiness, unusually high load, or adverse recent trend suggests modification.",
+            "stop": "Severe or multiple concerning signals suggest avoiding hard training and seeking human coach/medical review; requires strong directly grounded evidence."
+          }
         },
-        "caveats": {}
+        "caveats": {
+          "type": "string",
+          "description": "Missing or intentionally withheld information when relevant."
+        }
       }
     }
   },
@@ -160,25 +209,43 @@
     ],
     "historical_version_note": "The earlier script 21 rule omits deload from reduce_or_recovery. Script 23 is the version used for the stored robustness/grounding label recheck. Audit lexica are preserved by source in ../07_audit_lexica/audit_lexica_by_source.json."
   },
-  "x-historical-runtime-validation": {
-    "schema_reference": "#/$defs/historical_runtime_acceptance",
-    "scope": "Applied after parsing a JSON object: exactly the six top-level fields, supporting_evidence is an array, and safety_flag is none, caution or stop. The five batch validators implement the same acceptance conditions.",
-    "omitted_checks": "The historical validator did not enforce string types for the other top-level fields, evidence-item fields/types, evidence count, direction categories, sentence limits, or semantic grounding.",
+  "x-runtime-validation": {
+    "schema_reference": "#/$defs/runtime_acceptance",
+    "scope": "After parsing the response as a JSON object, validate the complete response structure: exactly the six required top-level fields; the specified field types; two to five supporting-evidence objects; required evidence-item fields and types; permitted direction values; and a safety_flag of none, caution or stop.",
+    "technical_validity_definition": "An output is technically valid only when it is JSON-parseable and conforms to the prespecified structural response schema.",
+    "checks": [
+      "Exactly the six required top-level fields are present, with no additional top-level fields.",
+      "current_state_interpretation, risk_identification, training_adjustment_suggestion and caveats are strings.",
+      "supporting_evidence is an array of two to five objects.",
+      "Every evidence object contains claim, variable and direction; claim and variable are strings.",
+      "direction is one of ↑, ↓, →, or JSON null.",
+      "safety_flag is a string with value none, caution or stop."
+    ],
     "saved_output_check": {
-      "outputs": 2230,
-      "accepted_by_historical_runtime_checks": 2230,
-      "outputs_with_identified_prompt_structural_deviations": 35,
-      "more_than_five_evidence_objects": 27,
-      "unsupported_direction_values": 8,
-      "overlap_between_these_two_groups": 0,
-      "primary_outputs_with_deviations": 24,
-      "robustness_outputs_with_deviations": 11
+      "record_scope": "Final retained outputs used in downstream analyses.",
+      "primary": {
+        "outputs": 1600,
+        "json_parseable": 1600,
+        "schema_conforming": 1600
+      },
+      "robustness": {
+        "outputs": 630,
+        "json_parseable": 630,
+        "schema_conforming": 630
+      },
+      "total": {
+        "outputs": 2230,
+        "json_parseable": 2230,
+        "schema_conforming": 2230
+      }
     },
-    "interpretation": "Runtime acceptance does not imply full prompt-contract compliance. Saved outputs are retained without correction. The structural check does not independently adjudicate sentence counts or semantic appropriateness."
+    "manual_output_editing": false,
+    "manual_parse_repair": false,
+    "interpretation": "All 1,600 primary outputs and all 630 final retained robustness outputs are JSON-parseable and conform to the prespecified structural response schema. Structural validity does not establish semantic grounding, label stability or suitability for autonomous sports-monitoring use."
   },
   "x-documentation-sources": [
-    "Historical prompt JSON instructions and safety-flag rules",
-    "Identical validate_payload functions in the five generation-batch scripts",
+    "Prespecified prompt JSON instructions and safety-flag rules",
+    "Technical-validity definition and final retained-output totals in sn-article.tex",
     "scripts/23_analyze_wave3_grounding_failure_cases.py:96-112",
     "scripts/21_run_wave2_clmm_primary_manual_audit.py:102-118"
   ]
