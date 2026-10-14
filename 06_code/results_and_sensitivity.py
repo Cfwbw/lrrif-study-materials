@@ -246,7 +246,9 @@ def run_output_level_sensitivity(scores, mapping, output_dir):
         "DeepSeek-V4-Flash",
         "Qwen3-8B baseline",
     ]
-    CLMM_ARM_ORDER = ["C", "D", "A", "B"]
+    # Reference order of the descriptive cross-dimension marginal latent EMM
+    # index from the primary interaction CLMMs (Supplementary Table S8).
+    CLMM_ARM_ORDER = ["A", "C", "D", "B"]
 
     DIMENSION_SETS = {
         "All 8 dimensions": ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"],
