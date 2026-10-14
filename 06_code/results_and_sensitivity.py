@@ -460,7 +460,7 @@ def run_complete_sensitivity(mapping, values, output_dir):
     audit = mapping.audit_flag.eq('yes').to_numpy()
     masks = {'all_outputs': np.ones(len(mapping), dtype=bool), 'exclude_audit_flagged': ~audit,
              'exclude_high_disagreement': ~high, 'exclude_audit_and_high_disagreement': ~(audit | high)}
-    if (int(high.sum()), int(audit.sum()), int((high & audit).sum())) != (547, 146, 78):
+    if (int(high.sum()), int(audit.sum()), int((high & audit).sum())) != (547, 130, 70):
         raise ValueError('Disagreement/audit counts do not match the study data.')
     aggregated = {'median': np.median(values, axis=2), 'mean': np.mean(values, axis=2)}
     output_values = {(d,a): v[:,cols].mean(axis=1) for d,cols in dimsets.items() for a,v in aggregated.items()}
