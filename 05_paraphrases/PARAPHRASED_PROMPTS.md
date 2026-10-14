@@ -28,6 +28,8 @@ These are three shared replacement texts, not 120 independently written paraphra
 
 ## Scope of the manipulation
 
-The replacement removes the original arm-specific Task wording. These are the prompts actually used; retaining other prompt sections does not establish strict semantic equivalence of every original Task constraint.
+The three variants were used as semantically equivalent paraphrases of the shared response task: interpret the current state using only visible data, identify grounded concerns, suggest a Day t+1 adjustment, cite exact input variables, and assign a safety flag in the required JSON. Here, semantic equivalence refers to these shared response requirements within the retained prompt context; the Task wording varies across the three stored variants.
+
+Each variant replaced the original arm-specific Task wording as described above. The system prompt, visible case data, grounding rules, safety-flag rules, output schema, and Arm D trend requirements remained unchanged. The exact variant texts and replacement span above define the implemented manipulation.
 
 Only the three code blocks above are replacement prompt content. The surrounding text explains their historical use. Fully instantiated prompts additionally require the case-specific values and, for Arm D, the saved availability-list string.
