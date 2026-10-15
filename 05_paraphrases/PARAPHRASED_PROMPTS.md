@@ -24,12 +24,8 @@ Task: Using only this prompt's visible data, write the required JSON with curren
 
 Start with the corresponding arm's original prompt in [FOUR_ARM_PROMPTS](../01_prompts/FOUR_ARM_PROMPTS), using the same case-specific input values. Replace the entire first span beginning with `Task: ` and ending immediately before the newline preceding `Grounding rules:` with one of the exact texts above. The system prompt and all user-prompt text outside this span remain unchanged, including the displayed input data, grounding rules, safety-flag rules, JSON instructions, and Arm D trend requirements.
 
-These are three shared replacement texts, not 120 independently written paraphrases. The same replacement was applied to Arms A, B, C, and D.
-
 ## Scope of the manipulation
 
 The three variants were used as semantically equivalent paraphrases of the shared response task: interpret the current state using only visible data, identify grounded concerns, suggest a Day t+1 adjustment, cite exact input variables, and assign a safety flag in the required JSON. Here, semantic equivalence refers to these shared response requirements within the retained prompt context; the Task wording varies across the three stored variants.
 
 Each variant replaced the original arm-specific Task wording as described above. The system prompt, visible case data, grounding rules, safety-flag rules, output schema, and Arm D trend requirements remained unchanged. The exact variant texts and replacement span above define the implemented manipulation.
-
-Only the three code blocks above are replacement prompt content. The surrounding text explains their historical use. Fully instantiated prompts additionally require the case-specific values and, for Arm D, the saved availability-list string.
