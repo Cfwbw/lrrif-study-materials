@@ -373,7 +373,7 @@ def build_primary_audit(outputs: pd.DataFrame, registry: pd.DataFrame) -> pd.Dat
 
 def build_primary_scores(ratings: pd.DataFrame, outputs: pd.DataFrame, registry: pd.DataFrame) -> pd.DataFrame:
     """Aggregate three ratings per output, rounding dimension means to three decimals."""
-    metadata = ["scoring_id", "output_id", "case_id", "participant_id", "date", "arm", "model_key", "model_name", "generation_batch", "source_run_dir"]
+    metadata = ["scoring_id", "output_id", "case_id", "participant_id", "date", "arm", "model_key", "model_name"]
     require_columns(ratings, metadata + ["rater_id"] + DIMS, "ratings")
     require_columns(outputs, ["output_id", "case_id", "participant_id", "date", "arm", "model_key", "provider"], "outputs")
     if ratings.duplicated(["scoring_id", "rater_id"]).any() or not ratings[DIMS].isin([1, 2, 3, 4, 5]).all().all():
@@ -401,7 +401,7 @@ def build_primary_scores(ratings: pd.DataFrame, outputs: pd.DataFrame, registry:
         ranges = np.ptp(values, axis=0)
         audit = flags.loc[row.output_id]
         result = {key: row[key] for key in ["scoring_id", "case_id", "arm", "model_key", "model_name"]}
-        result.update(provider=output.provider, generation_batch=row.generation_batch, audit_flag=audit.audit_flag, audit_flag_type=audit.audit_flag_type)
+        result.update(provider=output.provider, audit_flag=audit.audit_flag, audit_flag_type=audit.audit_flag_type)
         result.update(high_disagreement="yes" if ranges.max() >= 3 or ranges[[3, 4, 6]].max() >= 2 else "no",
                       max_dimension_range=int(ranges.max()), n_dimensions_range_ge2=int((ranges >= 2).sum()), n_dimensions_range_ge3=int((ranges >= 3).sum()))
         for j, dimension in enumerate(DIMS):
@@ -492,8 +492,8 @@ def validate_inputs(outputs: pd.DataFrame, ratings: pd.DataFrame, main_registry:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--outputs", required=True, type=Path, help="Released outputs_2230.csv.")
-    parser.add_argument("--ratings", required=True, type=Path, help="Released ratings_4800.csv.")
+    parser.add_argument("--outputs", required=True, type=Path, help="Input file: outputs_2230.csv.")
+    parser.add_argument("--ratings", required=True, type=Path, help="Input file: ratings_4800.csv.")
     parser.add_argument("--project-root", required=True, type=Path, help="Directory containing the original experiments/lrrif_v3_1 inputs.")
     parser.add_argument("--output-dir", required=True, type=Path)
     args = parser.parse_args()
