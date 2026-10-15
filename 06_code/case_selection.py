@@ -179,7 +179,6 @@ def select_robustness_cases(cases: pd.DataFrame) -> tuple[pd.DataFrame, list[str
 
 
 def mark_eligible_candidates(frame: pd.DataFrame) -> pd.DataFrame:
-    """Apply block availability and short-sleep rules to cleaned person-day data."""
     required = {'participant_id', 'date', 'fb_minutes_asleep'}
     if not required.issubset(frame.columns):
         raise ValueError(f'Missing candidate columns: {sorted(required - set(frame.columns))}')
@@ -210,13 +209,11 @@ def mark_eligible_candidates(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def select_study_cases(candidate_frame: pd.DataFrame):
-    """Return pilot, primary, robustness cases and the ten paraphrase case IDs."""
     candidate_frame = mark_eligible_candidates(candidate_frame)
     pilot = stratified_sample_cases(candidate_frame, 20, 42, prefix="pilot")
     excluded = set(zip(pilot.participant_id.astype(str), pilot.date.astype(str)))
     primary = stratified_sample_cases(candidate_frame, 100, 43,
                                      exclude_keys=excluded, prefix="case")
-    # Normalize CSV data types before robustness sampling.
     primary_for_robustness = pd.read_csv(StringIO(primary.to_csv(index=False)))
     robustness, _, paraphrase_case_ids = select_robustness_cases(primary_for_robustness)
     return pilot, primary, robustness, paraphrase_case_ids

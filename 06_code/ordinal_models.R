@@ -50,12 +50,6 @@ read_ratings <- function(path) {
   dat
 }
 
-# Portable fitting helpers for the primary interaction CLMMs.
-# Definitions only: sourcing this file does not fit a model or load archives.
-# Reconstructs the numerical path used in the saved Stage 2/3 analysis from
-# the supplied ratings. Numeric estimates are never copied from the paper.
-# The temporary ordinal namespace patch is process-local; run dimensions
-# serially in a process, or use separate R processes for parallel fitting.
 
 lrrif_primary_formula <- function() {
   score_ord ~ model_key * arm + rater_id +
@@ -95,8 +89,6 @@ lrrif_with_stable_logit_curvature <- function(expr) {
   patched <- original
   patched_body <- original_body
   patched_body[[4L]] <- quote({
-    # Exact logit conditional-curvature identity; no clipping, probability,
-    # likelihood, gradient, or subsequent Matrix-factorization change.
     phi2 <- rho$wts * (stats::dlogis(rho$eta1) + stats::dlogis(rho$eta2))
     stopifnot(all(is.finite(phi2)), all(phi2 >= 0))
   })
@@ -104,7 +96,6 @@ lrrif_with_stable_logit_curvature <- function(expr) {
   stopifnot(identical(as.list(original_body)[-4L],
                       as.list(body(patched))[-4L]))
   was_locked <- bindingIsLocked("hess.u", ns)
-  # Register restoration before changing the binding, including error exits.
   on.exit({
     if (bindingIsLocked("hess.u", ns)) unlockBinding("hess.u", ns)
     assign("hess.u", original, envir = ns)
@@ -147,8 +138,6 @@ lrrif_clmm_start_from_fit <- function(fit, d, interaction = TRUE) {
   }
   beta_start <- stats::setNames(rep(0, length(beta_names)), beta_names)
   beta_start[names(fit$beta)] <- fit$beta
-  # ST2par encodes these random-intercept diagonal entries as SDs, not log SDs.
-  # Preserve the actual internal group order and verify it before optimization.
   list(c(fit$alpha, beta_start), unname(ordinal:::ST2par(fit$ST)))
 }
 
@@ -176,7 +165,6 @@ lrrif_fit_primary_dimension <- function(d, dimension) {
   if (!dimension %in% paste0("D", 1:8)) stop("Unknown score dimension.")
   needed <- c("score_ord", "model_key", "arm", "rater_id", "case_id", "output_id")
   if (!all(needed %in% names(d)) || anyNA(d[needed])) stop("Incomplete model data.")
-  # Match the original treatment coding independently of caller options.
   old_options <- options(contrasts = c("contr.treatment", "contr.poly"))
   on.exit(options(old_options), add = TRUE)
   d <- as.data.frame(d)
@@ -218,8 +206,6 @@ lrrif_fit_primary_dimension <- function(d, dimension) {
   main_formula <- lrrif_primary_formula()
   control <- lrrif_primary_control(dimension)
   if (identical(dimension, "D2")) {
-    # Original Stage 1 fit supplies D2 fixed effects and case SD. This is an
-    # initialization fit only; it is not substituted for the primary model.
     case_fit <- run_fit("case_only_D2_initialization",
       score_ord ~ model_key + arm + rater_id + (1 | case_id),
       ordinal::clmm.control(maxIter = 200, gradTol = 1e-4))
@@ -227,9 +213,6 @@ lrrif_fit_primary_dimension <- function(d, dimension) {
       return(list(fit = NULL, additive_fit = NULL, attempts = attempts,
         model_name = "fit_failed", message = "D2 case-only initialization fit failed diagnostics."))
     }
-    # The original study has 1,600 output groups versus 100 case groups;
-    # ordinal orders these random-intercept SD parameters output, then case.
-    # Build the order by group cardinality and verify it against doFit=FALSE.
     group_order <- names(sort(c(output_id = nlevels(d$output_id),
       case_id = nlevels(d$case_id)), decreasing = TRUE))
     random_start <- c(output_id = 0.5,
@@ -267,8 +250,6 @@ lrrif_fit_primary_dimension <- function(d, dimension) {
       identical(fit$optRes$message, "iteration limit reached without convergence (10)")) {
     retry_control <- lrrif_primary_control(dimension, enlarged_outer_budget = TRUE)
     retry_start <- lrrif_clmm_start_from_fit(fit, d, interaction = TRUE)
-    # Retry from the returned full-model numerical point, not from zero
-    # interactions, and do not treat that unconverged point as an estimate.
     retry_check <- lrrif_capture_conditions(lrrif_check_nested_start(main_formula,
       d, retry_control, retry_start, fit))
     if (nzchar(retry_check$error)) {
@@ -290,15 +271,12 @@ lrrif_fit_primary_dimension <- function(d, dimension) {
     message = if (eligible) "" else "Primary interaction fit failed diagnostics; inspect numerical attempts.")
 }
 
-# Primary CLMM exports, ported from the archived 2026-10-13 postprocessing.
-# These functions only summarize an already fitted model; they do not fit/update it.
 
 primary_fixed_effects <- function(fit, dimension, fitted_model) {
   coef_table <- as.data.frame(coef(summary(fit)))
   coef_table$term <- rownames(coef_table)
   rownames(coef_table) <- NULL
   names(coef_table) <- make.names(names(coef_table))
-  # fit$beta contains every location coefficient, including rater and interaction.
   fixed <- coef_table[coef_table$term %in% names(fit$beta), , drop = FALSE]
   stopifnot(nrow(fixed) == length(fit$beta))
   tibble::tibble(
@@ -351,7 +329,6 @@ primary_marginal_pairwise <- function(marginal_emm, dimension, fitted_model,
   stopifnot(nrow(tab) == 6L)
   tab$p_raw <- tab$p.value
   tab$p_holm <- p.adjust(tab$p_raw, method = "holm", n = 6L)
-  # Preserve the prior file contract: downstream code treats p.value as Holm p.
   tab$p.value <- tab$p_holm
   tab$dimension <- dimension
   tab$fitted_model <- fitted_model
@@ -563,8 +540,6 @@ run_primary_models <- function(dat, output_dir, primary_model_dir = NULL) {
         fit <- fitted$fit
         fit_message <- paste(unique(unlist(lapply(fitted$attempts, `[[`, "warnings"))), collapse = " | ")
       } else {
-        # Reuse is explicit. A saved object is accepted only for identical
-        # rating rows, factor references, model formula and valid diagnostics.
         source_path <- file.path(primary_model_dir, paste0(dimension_name, "_interaction_clmm_fit.rds"))
         fit <- readRDS(source_path)
         fit_message <- "Saved model verified against every supplied rating row; no refit."
@@ -586,7 +561,6 @@ run_primary_models <- function(dat, output_dir, primary_model_dir = NULL) {
       fit_rows[[dimension_name]] <- result$status
       for (name in names(filenames)) tables[[name]][[dimension_name]] <- result$tables[[name]]
     }
-    # Persist progress and explicit failures without substituting another model.
     readr::write_csv(dplyr::bind_rows(fit_rows), file.path(output_dir, "PRIMARY_CLMM_FIT_STATUS.csv"))
   }
   for (name in names(filenames)) {
@@ -596,9 +570,6 @@ run_primary_models <- function(dat, output_dir, primary_model_dir = NULL) {
   invisible(dplyr::bind_rows(fit_rows))
 }
 
-# Fit only the additive member of the primary CLMM comparison. This helper
-# follows the additive phase of lrrif_fit_primary_dimension, including D2's
-# numerical initialization and temporary logit-curvature identity.
 lrrif_fit_additive_dimension <- function(d, dimension) {
   if (!requireNamespace("ordinal", quietly = TRUE)) stop("Package ordinal is required.")
   if (!dimension %in% paste0("D", 1:8)) stop("Unknown score dimension.")
@@ -738,8 +709,6 @@ validate_interaction_pair <- function(additive, interaction, d) {
       if (!identical(as.character(fit$model[[column]]), as.character(d[[column]]))) {
         stop("The ", name, " CLMM/input rows differ in ", column, ".")
       }
-      # ordinal drops unused response categories; compare the fitted response
-      # to observed input levels rather than requiring all five categories.
       expected_levels <- if (column == "score_ord") levels(droplevels(d[[column]])) else levels(d[[column]])
       if (!identical(levels(fit$model[[column]]), expected_levels)) {
         stop("The ", name, " CLMM/input levels differ in ", column, ".")
@@ -835,8 +804,6 @@ run_interaction_screen <- function(dat, output_dir, primary_model_dir = NULL,
         } else if (!is.null(additive_model_dir)) {
           stop("Explicit additive model is missing: ", additive_path)
         } else {
-          # A primary-only cache does not contain the null model. Compute only
-          # the missing additive member using the same initialization/controls.
           fitted <- lrrif_fit_additive_dimension(d, dimension)
           saveRDS(fitted$attempts, file.path(model_dir, paste0(dimension, "_additive_numerical_attempts.rds")))
           if (is.null(fitted$fit)) stop(fitted$message)
@@ -876,7 +843,6 @@ run_interaction_screen <- function(dat, output_dir, primary_model_dir = NULL,
   complete <- nrow(status) == 8L && all(status$status == "fit_ok") && all(is.finite(status$p_raw))
   status$family_complete <- complete
   if (complete) status$p_holm <- p.adjust(status$p_raw, method = "holm", n = 8L)
-  # A failed dimension leaves the entire eight-test adjusted family unavailable.
   readr::write_csv(status, file.path(output_dir, "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_SCREEN.csv"))
   readr::write_csv(dplyr::bind_rows(fixed_rows),
                   file.path(output_dir, "PRIMARY_ORDINAL_MODEL_ARM_INTERACTION_FIXED_EFFECTS.csv"))
@@ -931,8 +897,6 @@ main <- function(args = commandArgs(trailingOnly = TRUE)) {
     if (!is.null(primary_status) && any(primary_status$status != "fit_ok")) {
       stop("Primary analysis failed; interaction comparisons were not run from incomplete model outputs.")
     }
-    # Retain an explicitly supplied source cache, including any additive
-    # members it contains. Fresh all-mode fits are cached by run_primary_models.
     paired_primary_dir <- if (options$mode == "all" && is.null(primary_model_dir))
       file.path(output_dir, "primary", "model_objects") else primary_model_dir
     interaction_status <- run_interaction_screen(dat, file.path(output_dir, "interaction"),

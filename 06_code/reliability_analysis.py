@@ -22,7 +22,6 @@ PAIRS = list(combinations(range(3), 2))
 
 
 def load_ratings(path):
-    """Validate the 4,800 public rating rows and reshape to output × rater × dimension."""
     meta_fields = ['output_id', 'case_id', 'participant_id', 'date', 'arm', 'model_key']
     required = ['scoring_id', 'rater_id', *meta_fields, *DIMS]
     with path.open(encoding='utf-8-sig', newline='') as stream:
@@ -74,7 +73,6 @@ def load_ratings(path):
 
 
 def create_bootstrap_design(meta, out):
-    """Save shared participant-cluster bootstrap multiplicities."""
     participants = sorted({row['participant_id'] for row in meta})
     if len(participants) != 16:
         raise ValueError('Expected 16 participant clusters.')
@@ -105,7 +103,7 @@ def load_bootstrap_design(meta, design):
     if participants != expected or manifest['participant']['levels'] != expected:
         raise ValueError('Bootstrap participants do not match the rating data.')
     if manifest['replicates'] != B or manifest['participant']['seed'] != SEED:
-        raise ValueError('Bootstrap design must use 10,000 replicates and seed 20260923.')
+        raise ValueError('Bootstrap design must use 10,000 replicates and the configured seed.')
     if weights.shape != (B, 16) or not np.issubdtype(weights.dtype, np.integer):
         raise ValueError('Expected a 10,000 × 16 integer bootstrap-weight matrix.')
     if np.any(weights < 0) or not np.all(weights.sum(axis=1) == 16):
@@ -127,7 +125,6 @@ def strata(meta):
     return groups
 
 def sufficient_statistics(values, cluster_indices, n_clusters):
-    """values: output by 3 rater; result: cluster by 45 sufficient totals."""
     x = np.asarray(values, dtype=float)
     n = len(x)
     count = np.stack([(x==i).sum(axis=1) for i in range(1,6)], axis=1).astype(float)
@@ -142,8 +139,6 @@ def sufficient_statistics(values, cluster_indices, n_clusters):
         *[(x[:,a]-x[:,b])**2 for a,b in PAIRS],
         count, coincidence.reshape(n,25),
     ])
-    # n,T,sum(x^2),sum(row_total^2), rater sums(3), rater squares(3),
-    # exact,within, pair squared-difference sums(3), category counts(5), coincidences(25).
     assert features.shape[1] == 45
     out = np.zeros((n_clusters, features.shape[1]))
     np.add.at(out, cluster_indices, features)
@@ -155,7 +150,6 @@ def safe_divide(num, den):
     return result
 
 def metrics_from_totals(s):
-    """Compute metrics from weighted totals; rows are bootstrap replicates."""
     s = np.atleast_2d(s)
     n,t,ss,rowss = s[:,0],s[:,1],s[:,2],s[:,3]
     cols, colsq = s[:,4:7],s[:,7:10]
@@ -171,8 +165,6 @@ def metrics_from_totals(s):
     icc3 = safe_divide(numerator,ms_output+(ms_rater-ms_error)/n)
     kappas = []
     for p,(a,b) in enumerate(PAIRS):
-        # Algebraically cancel n^2 before dividing; integer-scale sums avoid
-        # cancellation around kappa=0 when one rater is constant.
         observed = s[:,12+p]*n
         expected = (colsq[:,a]+colsq[:,b])*n - 2*cols[:,a]*cols[:,b]
         kappas.append(1-safe_divide(observed,expected))
@@ -214,7 +206,6 @@ def run_reliability(data, meta, out, design):
             for m, metric in enumerate(METRICS):
                 finite = np.isfinite(boot[:, m])
                 nv = int(finite.sum())
-                # Undefined replicates are disclosed, never replaced or clipped.
                 lo, hi = np.quantile(boot[finite, m], [.025, .975], method='linear') if nv else [np.nan, np.nan]
                 status = ('undefined_point' if not np.isfinite(point[m]) else
                           'all_replicates_undefined' if not nv else

@@ -50,7 +50,6 @@ def read_scores(ratings_path, audit_path=None):
     scores['high_disagreement'] = np.where(high, 'yes', 'no')
     for j, dimension in enumerate(DIMS):
         scores[f'{dimension}_median_score'] = np.median(values[:, j, :], axis=1)
-        # The six-setting and participant screens use dimension means rounded to three decimals.
         scores[f'{dimension}_mean_score'] = [round(float(x), 3) for x in values[:, j, :].mean(axis=1)]
     if audit_path is not None:
         flags = pd.read_csv(audit_path, keep_default_na=False)
@@ -246,8 +245,6 @@ def run_output_level_sensitivity(scores, mapping, output_dir):
         "DeepSeek-V4-Flash",
         "Qwen3-8B baseline",
     ]
-    # Reference order of the descriptive cross-dimension marginal latent EMM
-    # index from the primary interaction CLMMs (Supplementary Table S8).
     CLMM_ARM_ORDER = ["A", "C", "D", "B"]
 
     DIMENSION_SETS = {
@@ -452,7 +449,6 @@ def run_participant_adjusted_sensitivity(scores, mapping, output_dir):
     arm_summary.to_csv(OUT_DIR / 'PRIMARY_PARTICIPANT_ADJUSTED_ARM_SUMMARY.csv', index=False)
 
 def run_complete_sensitivity(mapping, values, output_dir):
-    """Use unrounded integer ratings for the four output-inclusion scenarios."""
     out = result_directory(output_dir, 'sensitivity')
     dimsets = {'all8': list(range(8)), 'excludeD6': [0,1,2,3,4,6,7], 'coreD1D3D5': [0,2,4]}
     ranges = np.ptp(values, axis=2)

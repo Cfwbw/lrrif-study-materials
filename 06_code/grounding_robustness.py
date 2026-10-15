@@ -100,7 +100,6 @@ def add_payload_columns(df: pd.DataFrame) -> pd.DataFrame:
     payloads = [parse_payload(x) for x in out.get("parsed_json", pd.Series([""] * len(out))).fillna("")]
     out["_payload"] = payloads
     out["safety_flag"] = [p.get("safety_flag") if p else "unparsed" for p in payloads]
-    # decision_bucket stores the derived decision-caution label.
     out["decision_bucket"] = [decision_caution_label(p, raw) for p, raw in zip(payloads, out.get("raw_text", pd.Series([""] * len(out))).fillna(""))]
     out["payload_text"] = [payload_text(p, raw) for p, raw in zip(payloads, out.get("raw_text", pd.Series([""] * len(out))).fillna(""))]
     out["hrv_specific_hit"] = out["payload_text"].map(has_hrv_text)
@@ -320,7 +319,6 @@ def describe_case_reason(study_type: str, case_row: pd.Series, ft: pd.DataFrame)
 
 
 def read_input_csv(path: Path) -> pd.DataFrame:
-    # Map legacy headers at input; preserve batch values, output IDs, and payloads.
     return pd.read_csv(path).rename(columns={
         "wave3_task": "robustness_task", "wave3_condition": "robustness_condition",
         "source_wave": "generation_batch",
@@ -334,7 +332,6 @@ def require_columns(frame: pd.DataFrame, columns: list[str], name: str) -> None:
 
 
 def build_primary_audit(outputs: pd.DataFrame, registry: pd.DataFrame) -> pd.DataFrame:
-    """Compute audit flags for the 1,600 primary outputs."""
     require_columns(outputs, ["study_component", "output_id", "case_id", "arm", "parsed_json", "raw_text"], "outputs")
     require_columns(registry, ["case_id", "arm", "user_prompt"], "main prompt registry")
     primary = outputs.loc[outputs["study_component"].eq("primary")]
@@ -372,7 +369,6 @@ def build_primary_audit(outputs: pd.DataFrame, registry: pd.DataFrame) -> pd.Dat
 
 
 def build_primary_scores(ratings: pd.DataFrame, outputs: pd.DataFrame, registry: pd.DataFrame) -> pd.DataFrame:
-    """Aggregate three ratings per output, rounding dimension means to three decimals."""
     metadata = ["scoring_id", "output_id", "case_id", "participant_id", "date", "arm", "model_key", "model_name"]
     require_columns(ratings, metadata + ["rater_id"] + DIMS, "ratings")
     require_columns(outputs, ["output_id", "case_id", "participant_id", "date", "arm", "model_key", "provider"], "outputs")
@@ -418,7 +414,6 @@ def build_primary_scores(ratings: pd.DataFrame, outputs: pd.DataFrame, registry:
 
 
 def audit_robustness(outputs: pd.DataFrame, registry: pd.DataFrame) -> pd.DataFrame:
-    """Retain output-pattern counts separately from output-level flags and trend checks."""
     keys = ["case_id", "arm", "robustness_task", "robustness_condition", "prompt_hash"]
     merged = outputs.merge(registry[keys + ["user_prompt"]], on=keys, how="left", validate="one_to_one")
     if merged["user_prompt"].isna().any():

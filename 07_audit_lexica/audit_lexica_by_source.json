@@ -1,6 +1,4 @@
 {
-  "created": "2026-09-28",
-  "status": "Exact extraction of lexica and literal regular-expression calls from historical source files, assembled on 2026-09-28. The original expressions and line references are preserved by source; source paths identify the historical files and are not claims that each path exists in this minimal publication folder.",
   "versions": [
     {
       "source_relative_path": "scripts/06_post_lock_prompt_audit.py",
@@ -90,8 +88,6 @@
         }
       ],
       "application_context": {
-        "text_scanned": "raw_text for forbidden literal strings and risk/proxy wording; parsed supporting_evidence and visible prompt values for grounding checks.",
-        "forbidden_matching": "Each FORBIDDEN_TERMS entry is escaped and searched case-insensitively as a literal substring.",
         "missing_values": [
           "",
           "missing",
@@ -101,9 +97,7 @@
         "allowed_direction_when_missing": [
           null,
           "null"
-        ],
-        "trend_rule": "Case-insensitive TREND_MARKERS substring match on the evidence variable, excluding variables ending _today. Arm D is flagged when no evidence variable matches; this check does not require a nonmissing trend to be visible.",
-        "special_exception": "The C-A proxy rule requires subjective and proxy patterns and excludes raw_text matching the unavailable pattern. This exception does not apply to the general forbidden-term scan."
+        ]
       }
     },
     {
@@ -219,8 +213,6 @@
         }
       ],
       "application_context": {
-        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload; decision_bucket separately joins risk_identification, training_adjustment_suggestion and raw_text and lowercases the result.",
-        "matching": "Case-insensitive regular expressions for HRV and the wider recovery-proxy/diagnostic pattern. Decision categories use first-match priority as documented in ../02_schema_labels/OUTPUT_SCHEMA_AND_LABELS.json.",
         "missing_values": [
           "missing",
           "nan",
@@ -231,15 +223,7 @@
           "null",
           "",
           "→"
-        ],
-        "grounding_rule": "Evidence variables must exactly match names extracted from the actual prompt. Missingness is evaluated after stripping and lowercasing the extracted value.",
-        "failure_mode_rules": {
-          "unsupported_reasoning": "Any grounding issue, HRV-specific hit, or wider recovery-proxy/diagnostic hit.",
-          "vague_recommendation": "decision_bucket is unclear, or a nonmissing mean D2 score is <=2.5.",
-          "overreaction": "Stop/avoid-hard-training/no-training wording without injury/severe/very-low/multiple/high-risk wording, using the exact expressions below.",
-          "over-persistence": "Increase/progress/harder/high-intensity wording together with low-readiness/poor-sleep/injury/high-fatigue/elevated-soreness/high-stress wording.",
-          "missing-data breakdown": "For a Wave 3 missingness output: a grounding issue, or no missing/unavailable/masked/limited wording."
-        }
+        ]
       }
     },
     {
@@ -276,12 +260,7 @@
           "pattern": "\\b(maintain|same|normal|usual)\\b",
           "exact_expression": "re.search(r\"\\b(maintain|same|normal|usual)\\b\", text)"
         }
-      ],
-      "application_context": {
-        "role": "Review-support table construction and an earlier decision_bucket function.",
-        "decision_rule_difference": "Same category priority as script 23, but the reduce_or_recovery pattern does not include deload.",
-        "adjudication_limit": "Program-generated review-support notes are not independent per-output human adjudication records."
-      }
+      ]
     },
     {
       "source_relative_path": "experiments/lrrif_v3_1/main_runs/wave1_siliconflow/run_wave1_siliconflow.py",
@@ -352,16 +331,12 @@
         }
       ],
       "application_context": {
-        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload, for HRV and recovery-proxy/diagnostic searches.",
-        "matching": "Case-insensitive regular-expression search; generation-stage recovery/diagnostic wording uses the narrower pattern lists retained below.",
         "allowed_direction_when_missing": [
           null,
           "null",
           "",
           "→"
-        ],
-        "grounding_rule": "Evidence variables must exactly match visible input-variable names; a missing input value with another direction is flagged.",
-        "trend_rule": "Arm D trend citation is evaluated only where nonmissing trend variables are visible, using the source-specific trend expressions retained below."
+        ]
       }
     },
     {
@@ -433,16 +408,12 @@
         }
       ],
       "application_context": {
-        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload, for HRV and recovery-proxy/diagnostic searches.",
-        "matching": "Case-insensitive regular-expression search; generation-stage recovery/diagnostic wording uses the narrower pattern lists retained below.",
         "allowed_direction_when_missing": [
           null,
           "null",
           "",
           "→"
-        ],
-        "grounding_rule": "Evidence variables must exactly match visible input-variable names; a missing input value with another direction is flagged.",
-        "trend_rule": "Arm D trend citation is evaluated only where nonmissing trend variables are visible, using the source-specific trend expressions retained below."
+        ]
       }
     },
     {
@@ -514,16 +485,12 @@
         }
       ],
       "application_context": {
-        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload, for HRV and recovery-proxy/diagnostic searches.",
-        "matching": "Case-insensitive regular-expression search; generation-stage recovery/diagnostic wording uses the narrower pattern lists retained below.",
         "allowed_direction_when_missing": [
           null,
           "null",
           "",
           "→"
-        ],
-        "grounding_rule": "Evidence variables must exactly match visible input-variable names; a missing input value with another direction is flagged.",
-        "trend_rule": "Arm D trend citation is evaluated only where nonmissing trend variables are visible, using the source-specific trend expressions retained below."
+        ]
       }
     },
     {
@@ -595,16 +562,12 @@
         }
       ],
       "application_context": {
-        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload, for HRV and recovery-proxy/diagnostic searches.",
-        "matching": "Case-insensitive regular-expression search; generation-stage recovery/diagnostic wording uses the narrower pattern lists retained below.",
         "allowed_direction_when_missing": [
           null,
           "null",
           "",
           "→"
-        ],
-        "grounding_rule": "Evidence variables must exactly match visible input-variable names; a missing input value with another direction is flagged.",
-        "trend_rule": "Arm D trend citation is evaluated only where nonmissing trend variables are visible, using the source-specific trend expressions retained below."
+        ]
       }
     },
     {
@@ -689,25 +652,13 @@
         }
       ],
       "application_context": {
-        "text_scanned": "json.dumps(parsed_payload, ensure_ascii=False), falling back to raw_text if no parsed payload, for HRV and recovery-proxy/diagnostic searches.",
-        "matching": "Case-insensitive regular-expression search; generation-stage recovery/diagnostic wording uses the narrower pattern lists retained below.",
         "allowed_direction_when_missing": [
           null,
           "null",
           "",
           "→"
-        ],
-        "grounding_rule": "Evidence variables must exactly match visible input-variable names; a missing input value with another direction is flagged.",
-        "trend_rule": "Arm D trend citation is evaluated only where nonmissing trend variables are visible, using the source-specific trend expressions retained below.",
-        "wave3_addition": "For mask_block_e, also checks leakage of trend variables."
+        ]
       }
     }
-  ],
-  "description": "Audit lexica for the study. Distinct stages used different rules and scanned fields; the historical versions must not be merged into one purported original lexicon. Parsing expressions are retained because they determine the visible input variables used by grounding checks.",
-  "interpretation_notes": [
-    "Most lexical rules do not resolve negation. A keyword hit is not an independent clinical or human-adjudicated error determination.",
-    "Batch reports may count output-pattern matches whereas analysis indicators are output-level booleans; counts based on these units or on different rule versions are not interchangeable.",
-    "The final primary comparison uses Arms A-D. The earlier post-lock audit also contains historical C-A and D-E condition rules.",
-    "Line numbers and source paths refer to the historical source version. No new lexical rules replace those preserved below."
   ]
 }
